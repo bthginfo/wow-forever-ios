@@ -12,7 +12,7 @@ The script checks the layouts and key bindings, builds the SwiftUI app, boots an
 
 ## Physical iPhone or iPad
 
-Use at your own risk. This experimental port uses Playport's development toolchain. Prepare a supported iPhone or iPad with Developer Mode, a compatible provisioning profile, JIT and enough storage for WoW and the runtime. Check the pinned project's requirements for your device and iOS version. [Playport device setup](https://github.com/playportdev/playport/blob/06e83ca597b6383e5c5fc60f627892edb560251c/docs/DEVICE.md)
+Use at your own risk. This experimental port uses Playport's development toolchain. Its device build targets iOS 26.0 or later. Prepare an iPhone or iPad with Developer Mode, a compatible provisioning profile, JIT and enough storage for WoW and the runtime. Check which device and iOS combinations Playport has tested. [Playport device setup](https://github.com/playportdev/playport/blob/06e83ca597b6383e5c5fc60f627892edb560251c/docs/DEVICE.md)
 
 1. Clone this repo and create its separate runtime checkout.
 
@@ -32,6 +32,8 @@ Use at your own risk. This experimental port uses Playport's development toolcha
    ```
 
    Pair your device and provision the development app with the pinned Playport instructions. Then run `./pp install --no-build` to install the build from this checkout onto the paired device. Keep signing credentials and pairing files local. [Playport device pairing and installation](https://github.com/playportdev/playport/blob/06e83ca597b6383e5c5fc60f627892edb560251c/docs/DEVICE.md#setup-once)
+
+   This build uses Playport's development app identifier. Installing it under the same Apple team upgrades that team's existing Playport app in place.
 
 4. Open **WoW Forever iOS**, complete runtime setup, select your region and use **Download and install** when Blizzard offers the product. Leave the app open for the download.
 5. Tap **Play World of Warcraft** and follow the Windows client's Battle.net sign-in. Use the in-game toolbar menu to move controls or edit skills.

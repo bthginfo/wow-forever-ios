@@ -56,7 +56,7 @@ def port_changes(checkout: Path) -> dict[str, tuple[bytes | None, bytes]]:
     edit(
         "app/BattleNetClient/Sources/BattleNetClientKit/BattleNetProducts.swift",
         ('    case wowAnniversary = "wow_anniversary"', '    case wowAnniversary = "wow_anniversary"\n    case wowForever = "wowf"'),
-        ('        case .wow: return "World of Warcraft"', '        case .wow: return "World of Warcraft"\n        case .wowForever: return "World of Warcraft: Forever"'),
+        ('        case .wow: return "World of Warcraft"', '        case .wow: return "World of Warcraft"\n        case .wowForever: return "World of Warcraft Forever"'),
     )
     edit(
         "app/BattleNetClient/Sources/BattleNetClientKit/BattleNetArt.swift",
@@ -115,6 +115,8 @@ def port_changes(checkout: Path) -> dict[str, tuple[bytes | None, bytes]]:
     # The release staging directory symlinks the named top-level package resources.
     for path in sorted((ROOT / "Sources").glob("*.swift")):
         changes[f"app/Sources/S1Probe/Forever/{path.name}"] = (None, path.read_bytes())
+    offer_test = ROOT / "Tests" / "ForeverOfferTests.swift"
+    changes[f"app/BattleNetClient/Tests/BattleNetClientKitTests/{offer_test.name}"] = (None, offer_test.read_bytes())
     for path in sorted((ROOT / "ForeverTouch").iterdir()):
         if path.is_file():
             changes[f"app/ForeverTouch/{path.name}"] = (None, path.read_bytes())

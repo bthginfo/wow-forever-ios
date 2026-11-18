@@ -2,6 +2,11 @@ name: iOS Simulator
 on:
   push:
   workflow_dispatch:
+    inputs:
+      live_metadata:
+        description: Check the current EU install metadata on Blizzard's CDN
+        type: boolean
+        default: false
 permissions:
   contents: read
 
@@ -36,7 +41,9 @@ jobs:
           persist-credentials: false
       - name: Apply the port to the pinned Playport source
         run: bash tools/prepare_device.sh
-      - name: Build the Battle.net download client with the Forever product
-        run: xcrun swift build --package-path .build/playport/app/BattleNetClient --target BattleNetClientKit -j 2
+      - name: Test the Battle.net download client with the Forever product
+        env:
+          FOREVER_LIVE_METADATA: ${{ (inputs.live_metadata || contains(github.event.head_commit.message, '[check Blizzard]')) && '1' || '0' }}
+        run: xcrun swift test --package-path .build/playport/app/BattleNetClient --filter ForeverOfferTests -j 2
       - name: Check ContentKit archive integrity tests
         run: xcrun swift test --package-path .build/playport/app/ContentKit --filter ZipArchiveTests -j 2
