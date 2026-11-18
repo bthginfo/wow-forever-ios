@@ -7,7 +7,7 @@ permissions:
 
 jobs:
   simulator:
-    runs-on: xcode-27
+    runs-on: macos-15
     timeout-minutes: 16
     steps:
       - uses: actions/checkout@v4
@@ -39,4 +39,4 @@ jobs:
       - name: Build the Battle.net download client with the Forever product
         run: xcrun swift build --package-path .build/playport/app/BattleNetClient --target BattleNetClientKit -j 2
       - name: Check ContentKit archive integrity tests
-        run: xcrun swift test --package-path .build/playport/app/ContentKit --filter ZipTests -j 2
+        run: xcrun swift test --package-path .build/playport/app/ContentKit --filter ZipArchiveTests -j 2

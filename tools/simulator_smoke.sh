@@ -75,24 +75,13 @@ for version, _, phones in sorted(versions, key=lambda item: (item[0][:2] == sdk,
         continue
     for phone in phones:
         if phone["name"].startswith("iPhone") and phone["isAvailable"]:
-            print(phone["udid"], phone["state"])
+            print(phone["udid"])
             raise SystemExit(0)
 raise SystemExit("No iOS 18+ iPhone Simulator available")
 ' "$sdk_version")
-read -r device state <<< "$device_info"
+device="$device_info"
 printf 'Booting iPhone Simulator %s\n' "$device"
-if [[ "$state" != Booted ]]; then
-    xcrun simctl boot "$device"
-fi
-deadline=$((SECONDS + 180))
-until xcrun simctl spawn "$device" launchctl list 2>/dev/null |
-    awk '$1 ~ /^[0-9]+$/ && $3 == "com.apple.SpringBoard" { ready = 1 } END { exit !ready }'; do
-    if (( SECONDS >= deadline )); then
-        printf 'SpringBoard did not start on the iPhone Simulator.\n' >&2
-        exit 1
-    fi
-    sleep 2
-done
+xcrun simctl bootstatus "$device" -b
 printf 'Launching the SwiftUI preview\n'
 xcrun simctl install "$device" "$app"
 xcrun simctl launch --terminate-running-process "$device" "$identifier"

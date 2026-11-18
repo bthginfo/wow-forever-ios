@@ -31,7 +31,7 @@ Use at your own risk. This experimental port uses Playport's development toolcha
    ./pp build
    ```
 
-   Follow the development signing and installation process for your device. Keep signing credentials and pairing files local. [Playport distribution and signing](https://github.com/playportdev/playport/blob/06e83ca597b6383e5c5fc60f627892edb560251c/docs/DISTRIBUTION.md#5-installation-for-the-recipient)
+   Pair your device and provision the development app with the pinned Playport instructions. Then run `./pp install --no-build` to install the build from this checkout onto the paired device. Keep signing credentials and pairing files local. [Playport device pairing and installation](https://github.com/playportdev/playport/blob/06e83ca597b6383e5c5fc60f627892edb560251c/docs/DEVICE.md#setup-once)
 
 4. Open **WoW Forever iOS**, complete runtime setup, select your region and use **Download and install** when Blizzard offers the product. Leave the app open for the download.
 5. Tap **Play World of Warcraft** and follow the Windows client's Battle.net sign-in. Use the in-game toolbar menu to move controls or edit skills.
