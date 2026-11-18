@@ -6,18 +6,26 @@ output="$PWD/.build/simulator"
 product="ForeverSimulator"
 identifier="app.wowforever.ios.simulator"
 app="$output/$product.app"
+phase="${1:-all}"
+case "$phase" in
+    all|build|run) ;;
+    *) printf 'Usage: %s [build|run]\n' "$0" >&2; exit 2 ;;
+esac
 mkdir -p "$app"
 
-xcrun swiftc -swift-version 5 Sources/ForeverCore.swift Tests/ForeverCoreTests.swift -o "$output/core-tests"
-"$output/core-tests"
-xcrun swiftc -frontend -parse Sources/ForeverPlayport.swift
+if [[ "$phase" != run ]]; then
+    printf 'Building host layout tests\n'
+    xcrun swiftc -swift-version 5 Sources/ForeverCore.swift Tests/ForeverCoreTests.swift -o "$output/core-tests"
+    "$output/core-tests"
+    xcrun swiftc -frontend -parse Sources/ForeverPlayport.swift
 
-sdk=$(xcrun --sdk iphonesimulator --show-sdk-path)
-xcrun --sdk iphonesimulator swiftc -swift-version 5 -target "$(uname -m)-apple-ios18.0-simulator" \
-    -sdk "$sdk" -module-name "$product" Sources/ForeverCore.swift Sources/ForeverLauncher.swift \
-    Sources/ForeverOverlay.swift Simulator/ForeverSimulator.swift -o "$app/$product"
+    printf 'Building the iOS Simulator app\n'
+    sdk=$(xcrun --sdk iphonesimulator --show-sdk-path)
+    xcrun --sdk iphonesimulator swiftc -swift-version 5 -target "$(uname -m)-apple-ios18.0-simulator" \
+        -sdk "$sdk" -module-name "$product" Sources/ForeverCore.swift Sources/ForeverLauncher.swift \
+        Sources/ForeverOverlay.swift Simulator/ForeverSimulator.swift -o "$app/$product"
 
-python3 - "$app/Info.plist" "$product" "$identifier" <<'PYTHON'
+    python3 - "$app/Info.plist" "$product" "$identifier" <<'PYTHON'
 import plistlib
 import sys
 
@@ -42,7 +50,10 @@ with open(path, "wb") as output:
         ],
     }, output)
 PYTHON
-codesign --force --sign - "$app"
+    codesign --force --sign - "$app"
+fi
+[[ "$phase" != build ]] || exit 0
+test -x "$app/$product"
 
 device=$(xcrun simctl list devices available -j | python3 -c '
 import json
@@ -57,7 +68,9 @@ for runtime in sorted(devices, reverse=True):
                 raise SystemExit(0)
 raise SystemExit("No iOS 18+ iPhone Simulator available")
 ')
+printf 'Booting iPhone Simulator %s\n' "$device"
 xcrun simctl bootstatus "$device" -b
+printf 'Launching the SwiftUI preview\n'
 xcrun simctl install "$device" "$app"
 xcrun simctl launch --terminate-running-process "$device" "$identifier"
 sleep 2

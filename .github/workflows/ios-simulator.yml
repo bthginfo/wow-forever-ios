@@ -13,11 +13,27 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - name: Build and run the iPhone Simulator preview
-        run: bash tools/simulator_smoke.sh
+      - name: Compile the iPhone Simulator app and run layout tests
+        timeout-minutes: 5
+        run: bash tools/simulator_smoke.sh build
+      - name: Boot an iPhone and render the launcher and HUD
+        timeout-minutes: 9
+        run: bash tools/simulator_smoke.sh run
       - name: Upload Simulator screenshots
         uses: actions/upload-artifact@v4
         with:
           name: wow-forever-ios-simulator
           path: .build/simulator/*.png
           if-no-files-found: error
+
+  client:
+    runs-on: macos-15
+    timeout-minutes: 13
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Apply the port to the pinned Playport source
+        run: bash tools/prepare_device.sh
+      - name: Build the Battle.net download client with the Forever product
+        run: xcrun swift build --package-path .build/playport/app/BattleNetClient --target BattleNetClientKit -j 2
