@@ -44,6 +44,18 @@ jobs:
       - name: Test the Battle.net download client with the Forever product
         env:
           FOREVER_LIVE_METADATA: ${{ (inputs.live_metadata || contains(github.event.head_commit.message, '[check Blizzard]')) && '1' || '0' }}
-        run: xcrun swift test --package-path .build/playport/app/BattleNetClient --filter ForeverOfferTests -j 2
+        run: |
+          package=.build/playport/app/BattleNetClient
+          mkdir -p "$package/Tests/ForeverOfferCheck"
+          cp Tests/ForeverOfferCheck.swift "$package/Tests/ForeverOfferCheck/"
+          cat >> "$package/Package.swift" <<'SWIFT'
+
+          package.targets.append(.executableTarget(
+              name: "ForeverOfferCheck",
+              dependencies: ["BattleNetClientKit", .product(name: "ContentKit", package: "ContentKit")],
+              path: "Tests/ForeverOfferCheck"
+          ))
+          SWIFT
+          xcrun swift run --package-path "$package" -j 2 ForeverOfferCheck
       - name: Check ContentKit archive integrity tests
         run: xcrun swift test --package-path .build/playport/app/ContentKit --filter ZipArchiveTests -j 2
