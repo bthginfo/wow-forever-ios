@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
+import json
 from pathlib import Path
 import subprocess
 
@@ -31,6 +33,26 @@ def port_changes(checkout: Path) -> dict[str, tuple[bytes | None, bytes]]:
             updated = applied(updated, old, new, path)
         changes[path] = (original, updated.encode("utf-8"))
 
+    edit(
+        "app/ContentKit/Sources/ContentKit/Hashes.swift",
+        (
+            """                    c = t[7 * 256 + Int(lo & 0xFF)] ^ t[6 * 256 + Int((lo >> 8) & 0xFF)]
+                        ^ t[5 * 256 + Int((lo >> 16) & 0xFF)] ^ t[4 * 256 + Int(lo >> 24)]
+                        ^ t[3 * 256 + Int(hi & 0xFF)] ^ t[2 * 256 + Int((hi >> 8) & 0xFF)]
+                        ^ t[256 + Int((hi >> 16) & 0xFF)] ^ t[Int(hi >> 24)]""",
+            """                    let lo0 = t[7 * 256 + Int(lo & 0xFF)]
+                    let lo1 = t[6 * 256 + Int((lo >> 8) & 0xFF)]
+                    let lo2 = t[5 * 256 + Int((lo >> 16) & 0xFF)]
+                    let lo3 = t[4 * 256 + Int(lo >> 24)]
+                    let hi0 = t[3 * 256 + Int(hi & 0xFF)]
+                    let hi1 = t[2 * 256 + Int((hi >> 8) & 0xFF)]
+                    let hi2 = t[256 + Int((hi >> 16) & 0xFF)]
+                    let hi3 = t[Int(hi >> 24)]
+                    let low = (lo0 ^ lo1) ^ (lo2 ^ lo3)
+                    let high = (hi0 ^ hi1) ^ (hi2 ^ hi3)
+                    c = low ^ high""",
+        ),
+    )
     edit(
         "app/BattleNetClient/Sources/BattleNetClientKit/BattleNetProducts.swift",
         ('    case wowAnniversary = "wow_anniversary"', '    case wowAnniversary = "wow_anniversary"\n    case wowForever = "wowf"'),
@@ -103,17 +125,22 @@ def prepare(checkout: Path) -> None:
     if git(checkout, "rev-parse", "HEAD") != PIN:
         raise ValueError(f"Expected Playport {PIN}; use a separate checkout")
     changes = port_changes(checkout)
+    marker = Path(git(checkout, "rev-parse", "--absolute-git-dir")) / "forever-port-files.json"
+    previous = json.loads(marker.read_text()) if marker.is_file() else {}
     # Validate the whole set before writing, so an unrelated edit never leaves a partial port.
     for name, (original, prepared) in changes.items():
         target = checkout / name
         current = target.read_bytes() if target.is_file() else None
-        if current not in (original, prepared):
+        digest = hashlib.sha256(current).hexdigest() if current is not None else None
+        if current not in (original, prepared) and digest != previous.get(name):
             raise ValueError(f"Local changes in {name}; use a separate runtime checkout")
     for name, (_, prepared) in changes.items():
         target = checkout / name
         target.parent.mkdir(parents=True, exist_ok=True)
         if not target.is_file() or target.read_bytes() != prepared:
             target.write_bytes(prepared)
+    marker.write_text(json.dumps({name: hashlib.sha256(contents).hexdigest()
+                                  for name, (_, contents) in changes.items()}, indent=2) + "\n")
     print(f"Prepared {len(changes)} files in the Playport checkout.")
 
 

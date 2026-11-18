@@ -55,21 +55,42 @@ fi
 [[ "$phase" != build ]] || exit 0
 test -x "$app/$product"
 
-device=$(xcrun simctl list devices available -j | python3 -c '
+sdk_version=$(xcrun --sdk iphonesimulator --show-sdk-version)
+printf 'Looking for an iPhone Simulator for SDK %s\n' "$sdk_version"
+device_info=$(xcrun simctl list devices available -j | python3 -c '
 import json
 import sys
 
 devices = json.load(sys.stdin)["devices"]
-for runtime in sorted(devices, reverse=True):
-    if "SimRuntime.iOS-" in runtime and int(runtime.split("iOS-")[1].split("-")[0]) >= 18:
-        for phone in devices[runtime]:
-            if phone["name"].startswith("iPhone") and phone["isAvailable"]:
-                print(phone["udid"])
-                raise SystemExit(0)
+sdk = tuple(map(int, sys.argv[1].split(".")[:2]))
+versions = {
+    tuple(map(int, runtime.split("SimRuntime.iOS-")[1].split("-"))): phones
+    for runtime, phones in devices.items()
+    if "SimRuntime.iOS-" in runtime
+}
+for version in sorted(versions, key=lambda version: (version[:2] == sdk, version), reverse=True):
+    if version[0] < 18:
+        continue
+    for phone in versions[version]:
+        if phone["name"].startswith("iPhone") and phone["isAvailable"]:
+            print(phone["udid"], phone["state"])
+            raise SystemExit(0)
 raise SystemExit("No iOS 18+ iPhone Simulator available")
-')
+' "$sdk_version")
+read -r device state <<< "$device_info"
 printf 'Booting iPhone Simulator %s\n' "$device"
-xcrun simctl bootstatus "$device" -b
+if [[ "$state" != Booted ]]; then
+    xcrun simctl boot "$device"
+fi
+deadline=$((SECONDS + 180))
+until xcrun simctl spawn "$device" launchctl list 2>/dev/null |
+    awk '$1 ~ /^[0-9]+$/ && $3 == "com.apple.SpringBoard" { ready = 1 } END { exit !ready }'; do
+    if (( SECONDS >= deadline )); then
+        printf 'SpringBoard did not start on the iPhone Simulator.\n' >&2
+        exit 1
+    fi
+    sleep 2
+done
 printf 'Launching the SwiftUI preview\n'
 xcrun simctl install "$device" "$app"
 xcrun simctl launch --terminate-running-process "$device" "$identifier"

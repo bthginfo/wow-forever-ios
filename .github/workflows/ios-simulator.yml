@@ -7,7 +7,7 @@ permissions:
 
 jobs:
   simulator:
-    runs-on: macos-15
+    runs-on: xcode-27
     timeout-minutes: 16
     steps:
       - uses: actions/checkout@v4
@@ -25,6 +25,7 @@ jobs:
           name: wow-forever-ios-simulator
           path: .build/simulator/*.png
           if-no-files-found: error
+          include-hidden-files: true
 
   client:
     runs-on: macos-15
@@ -37,3 +38,5 @@ jobs:
         run: bash tools/prepare_device.sh
       - name: Build the Battle.net download client with the Forever product
         run: xcrun swift build --package-path .build/playport/app/BattleNetClient --target BattleNetClientKit -j 2
+      - name: Check ContentKit archive integrity tests
+        run: xcrun swift test --package-path .build/playport/app/ContentKit --filter ZipTests -j 2
