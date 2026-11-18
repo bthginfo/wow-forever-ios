@@ -59,19 +59,21 @@ sdk_version=$(xcrun --sdk iphonesimulator --show-sdk-version)
 printf 'Looking for an iPhone Simulator for SDK %s\n' "$sdk_version"
 device_info=$(xcrun simctl list devices available -j | python3 -c '
 import json
+import re
 import sys
 
 devices = json.load(sys.stdin)["devices"]
 sdk = tuple(map(int, sys.argv[1].split(".")[:2]))
-versions = {
-    tuple(map(int, runtime.split("SimRuntime.iOS-")[1].split("-"))): phones
-    for runtime, phones in devices.items()
-    if "SimRuntime.iOS-" in runtime
-}
-for version in sorted(versions, key=lambda version: (version[:2] == sdk, version), reverse=True):
+versions = []
+for runtime, phones in devices.items():
+    match = re.search(r"\.SimRuntime\.iOS-(\d+)-(\d+)(?:-(\d+))?", runtime)
+    if match:
+        version = tuple(int(value or 0) for value in match.groups())
+        versions.append((version, not runtime[match.end():], phones))
+for version, _, phones in sorted(versions, key=lambda item: (item[0][:2] == sdk, item[0], item[1]), reverse=True):
     if version[0] < 18:
         continue
-    for phone in versions[version]:
+    for phone in phones:
         if phone["name"].startswith("iPhone") and phone["isAvailable"]:
             print(phone["udid"], phone["state"])
             raise SystemExit(0)
