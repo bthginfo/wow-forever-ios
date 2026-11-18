@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import Foundation
+#if canImport(CoreGraphics)
+import CoreGraphics
+#endif
 
 enum ForeverLanguage: String, CaseIterable, Identifiable {
     case en, de

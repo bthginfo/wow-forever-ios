@@ -10,6 +10,7 @@ mkdir -p "$app"
 
 xcrun swiftc -swift-version 5 Sources/ForeverCore.swift Tests/ForeverCoreTests.swift -o "$output/core-tests"
 "$output/core-tests"
+xcrun swiftc -frontend -parse Sources/ForeverPlayport.swift
 
 sdk=$(xcrun --sdk iphonesimulator --show-sdk-path)
 xcrun --sdk iphonesimulator swiftc -swift-version 5 -target "$(uname -m)-apple-ios18.0-simulator" \
