@@ -1,0 +1,23 @@
+name: iOS Simulator
+on:
+  push:
+  workflow_dispatch:
+permissions:
+  contents: read
+
+jobs:
+  simulator:
+    runs-on: macos-15
+    timeout-minutes: 16
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Build and run the iPhone Simulator preview
+        run: bash tools/simulator_smoke.sh
+      - name: Upload Simulator screenshots
+        uses: actions/upload-artifact@v4
+        with:
+          name: wow-forever-ios-simulator
+          path: .build/simulator/*.png
+          if-no-files-found: error
