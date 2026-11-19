@@ -126,6 +126,7 @@ struct ForeverGameControls: View {
                 ForeverOverlay(input: ForeverRuntime.deliver, onEditingChange: { editingTouchLayout = $0 })
             }
         }
+        .allowsHitTesting(inputReady && !desktopInput)
         .onReceive(Self.accessoryChanges) { _ in hardwareDesktop = ForeverRuntime.hasDesktopInput }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active { hardwareDesktop = ForeverRuntime.hasDesktopInput }
