@@ -58,16 +58,10 @@ Use at your own risk. This experimental port uses Playport's development toolcha
 
 This route applies to an **ad hoc or unsigned device IPA** from this project. It requires the prepared Playport checkout, the patched `xtool`, an Apple Account and a paired, unlocked device. Complete the pinned Playport host and pairing setup first. [Patched signer and IPA installation](https://github.com/playportdev/playport/blob/06e83ca597b6383e5c5fc60f627892edb560251c/docs/DISTRIBUTION.md#5-installation-for-the-recipient)
 
-On the Linux host, close the running app on the phone and run these commands from the prepared `.build/playport` checkout. Replace the IPA path with your file.
+On the Linux host, close the running app on the phone and run this command from the WoW Forever iOS checkout. Replace the IPA path with your file.
 
 ```bash
-ipa=/absolute/path/to/WoW-Forever-iOS.ipa
-. build/env.sh
-signing_temp="$PLAYPORT_BUILD/resign-tmp"
-mkdir -p "$signing_temp"
-./pp phone lock -- env USBMUXD_SOCKET_ADDRESS="UNIX:$PLAYPORT_USBMUX_SOCKET" \
-  XTL_TMPDIR="$signing_temp" TMPDIR="$signing_temp" \
-  "$XTOOL" install --network "$ipa"
+bash tools/install_ipa.sh /absolute/path/to/WoW-Forever-iOS.ipa
 ```
 
 The patched signer keeps the **Increased Memory Limit** capability and signs the JIT helper. For an IPA you already signed for this device through Playport, use the paired-device install procedure in the upstream guide. If the Apple team reports that it has no registered iOS device, follow Playport's first-registration steps. [Playport device registration and free-team limits](https://github.com/playportdev/playport/blob/06e83ca597b6383e5c5fc60f627892edb560251c/docs/DEVICE.md#free-team-limits)
