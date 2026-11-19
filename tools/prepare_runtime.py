@@ -56,7 +56,7 @@ def port_changes(checkout: Path) -> dict[str, tuple[bytes | None, bytes]]:
     edit(
         "app/GOGClient/Sources/GOGClientKit/GalaxyListener.swift",
         ("            let fds = [listenFD] + Array(connections)",
-         "            var fds = [listenFD]\n            fds.append(contentsOf: connections)"),
+         "            let fds = [listenFD] + Array(self.connections)"),
     )
     edit(
         "app/BattleNetClient/Sources/BattleNetClientKit/BattleNetProducts.swift",
