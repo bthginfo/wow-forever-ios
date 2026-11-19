@@ -1,6 +1,6 @@
 # WoW Forever iOS
 
-**Experimental source port for iPhone and iPad.** [Android release](https://github.com/bthginfo/wow-forever-mobile/releases/tag/v2.4.4-mobile.15)
+**Experimental source port for iPhone and iPad.** [Android releases](https://github.com/bthginfo/wow-forever-mobile/releases)
 
 The project brings the Android launcher's gold-and-navy interface, German and English controls, and Forever Touch add-on to SwiftUI. The device build integrates with a pinned Playport runtime for Wine, FEX and Metal-based graphics. It targets Blizzard's `wowf` product and delegates account sign-in to the game client.
 
@@ -11,7 +11,7 @@ The project brings the Android launcher's gold-and-navy interface, German and En
 | Launcher | Status panel, Battle.net region, 720p/900p/1080p render presets and English/German interface |
 | Touch controls | Movement stick, right-drag camera, Jump, Target and Interact, with a compact phone layout and tablet layout |
 | In-game toolbar | Chat, Bags, Map, Character, Talents, Quests, Spellbook, collapsible toolbar, text input and fullscreen controls |
-| Editing | Move and save touch-control positions. The shared Forever Touch Lua add-on provides the two skill arcs and per-character spell and item editing. |
+| Editing | Move and save touch-control positions. The Forever Touch add-on lets each character save and switch between sets of left and right skill arcs. |
 | Runtime | Playport supplies the download, update check, Windows guest and input. The Android browser-first Battle.net handoff is pending. |
 
 The app selects the tablet HUD when both window dimensions are at least 600 points. The game resolution is fitted to the current aspect ratio at launch. Playport supplies the in-game keyboard.
@@ -51,11 +51,17 @@ Keep device pairing files and Apple signing credentials private. StikDebug and L
 
 Once setup is ready, choose your region, tap **Download and install**, and leave the app open while it downloads the Windows client from Blizzard. Tap **Play World of Warcraft** and sign in inside the game using a Battle.net account with WoW Forever access. Use the on-screen toolbar for chat, bags, maps and control editing. The automatic browser sign-in used by the Android release is pending on iOS.
 
+## Skill arc sets
+
+Open **More controls → Edit skills → Add set**. Each set has its own left and right arc for spells and usable items. Tap **+** on an arc to add a slot, use **‹** and **›** to edit the other sets, and tap **Save**. With two or more sets, the **Set 1 / 2** button at the bottom of the HUD cycles through them during play. Your existing arc layout becomes **Set 1**. Sets are saved per character.
+
 ## Tests
 
 The launcher and touch overlay passed automated interaction tests on a simulated iPhone 16 Pro and iPad Pro. The same run also checked the Playport input library and the Forever Touch mobile profile logic. Installation, JIT and gameplay on physical devices are pending. [Test report](https://github.com/bthginfo/wow-forever-ios/actions/runs/44478093466) · [Run the preview locally](docs/INSTALL.md#iphone-simulator)
 
 The Playport app target also compiled with Xcode 26.6 and the iPhoneOS SDK. That check covers source compilation before runtime linking, IPA packaging and signing. [iPhoneOS compile report](https://github.com/bthginfo/wow-forever-ios/actions/runs/44483673108)
+
+Run `lua Tests/ForeverTouchProfiles.lua` to check arc set migration, editing and switching with simulated WoW events.
 
 ## Source, credits and use at your own risk
 
