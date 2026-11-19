@@ -1,0 +1,30 @@
+name: iPhoneOS runtime compile check
+on:
+  push:
+    branches: [device-validation]
+    paths:
+      - .github/workflows/ios-runtime-compile.yml
+      - Tests/prepare_runtime_compile.py
+      - Sources/**
+      - tools/prepare_*
+  workflow_dispatch:
+permissions:
+  contents: read
+
+jobs:
+  playport:
+    runs-on: macos-15
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Stage the iOS port and pinned native driver sources
+        run: |
+          bash tools/prepare_device.sh
+          python3 Tests/prepare_runtime_compile.py .build/playport .build/runtime-compile/app
+      - name: Compile the Playport app target with the iPhoneOS SDK
+        run: |
+          sdk=$(xcrun --sdk iphoneos --show-sdk-path)
+          PLAYPORT_VARIANT=release xcrun swift build --package-path .build/runtime-compile/app \
+            --target Playport --triple arm64-apple-ios26.0 --sdk "$sdk" -j 2
