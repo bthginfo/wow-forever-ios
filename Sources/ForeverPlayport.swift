@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Compiled as part of the pinned Playport app by tools/prepare_runtime.py.
 import BattleNetClientKit
+import Combine
 import Foundation
+import GameController
 import HostIOKit
 import PlayportKit
 import SwiftUI
@@ -13,6 +15,10 @@ enum ForeverRuntime {
     static let key = BattleNet.key(product)
     static let titleID = key.titleID
     private static var motion = RelativeMotion()
+    private static var addonDirectory: URL?
+    private static let inputModeFile = "ForeverTouchInputMode.lua"
+
+    static var hasDesktopInput: Bool { GCKeyboard.coalesced != nil && !GCMouse.mice().isEmpty }
 
     static func deliver(_ event: ForeverInput) {
         switch event {
@@ -56,13 +62,86 @@ enum ForeverRuntime {
         let toc = try String(contentsOf: source.appendingPathComponent("ForeverTouch.toc"), encoding: .utf8)
         let language = UserDefaults.standard.string(forKey: "forever.language") ?? ForeverLanguage.preferred.rawValue
         let manifest = Data(("## X-ForeverTouch-Language: \(language)\n" + toc).utf8)
-        assets += [("ForeverTouch.toc", manifest), ("ForeverTouch_Camelot.toc", manifest)]
+        assets += [(inputModeFile, inputModeData(desktop: hasDesktopInput)),
+                   ("ForeverTouch.toc", manifest), ("ForeverTouch_Camelot.toc", manifest)]
         try FileManager.default.createDirectory(at: directories, withIntermediateDirectories: true)
         for (name, data) in assets {
             let destination = directories.appendingPathComponent(name)
             if (try? Data(contentsOf: destination)) != data {
                 try data.write(to: destination, options: .atomic)
             }
+        }
+        addonDirectory = directories
+    }
+
+    private static func inputModeData(desktop: Bool) -> Data {
+        Data("local _, addon = ...\naddon.desktopInput = \(desktop)\n".utf8)
+    }
+
+    static func saveInputMode(desktop: Bool) {
+        guard let addonDirectory else { return }
+        let destination = addonDirectory.appendingPathComponent(inputModeFile)
+        let data = inputModeData(desktop: desktop)
+        do {
+            if (try? Data(contentsOf: destination)) != data {
+                try data.write(to: destination, options: .atomic)
+            }
+        } catch {
+            NSLog("Could not save the current Forever Touch input mode: %@", error.localizedDescription)
+        }
+    }
+
+    static func sendInputMode(desktop: Bool) {
+        let keyboard = GCKeyboard.coalesced?.keyboardInput
+        func pressed(_ left: GCKeyCode, _ right: GCKeyCode) -> Bool {
+            keyboard?.button(forKeyCode: left)?.isPressed == true ||
+                keyboard?.button(forKeyCode: right)?.isPressed == true
+        }
+        var held: Set<UInt8> = []
+        if pressed(.leftControl, .rightControl) { held.insert(ForeverKeys.control) }
+        if pressed(.leftAlt, .rightAlt) { held.insert(ForeverKeys.alt) }
+        if pressed(.leftShift, .rightShift) { held.insert(ForeverKeys.shift) }
+        ForeverKeys.inputMode(desktop: desktop, heldModifiers: held).forEach(deliver)
+    }
+}
+
+@MainActor
+struct ForeverGameControls: View {
+    var inputReady: Bool
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var hardwareDesktop = ForeverRuntime.hasDesktopInput
+    @State private var editingTouchLayout = false
+
+    private var desktopInput: Bool { hardwareDesktop && !editingTouchLayout }
+    private var readyMode: Bool? { inputReady && scenePhase == .active ? desktopInput : nil }
+
+    private static let accessoryChanges = Publishers.MergeMany([
+        Notification.Name.GCKeyboardDidConnect, .GCKeyboardDidDisconnect, .GCMouseDidConnect, .GCMouseDidDisconnect,
+    ].map { NotificationCenter.default.publisher(for: $0) })
+
+    var body: some View {
+        ZStack {
+            Color.clear.allowsHitTesting(false)
+            if inputReady && !desktopInput {
+                ForeverOverlay(input: ForeverRuntime.deliver, onEditingChange: { editingTouchLayout = $0 })
+            }
+        }
+        .onReceive(Self.accessoryChanges) { _ in hardwareDesktop = ForeverRuntime.hasDesktopInput }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { hardwareDesktop = ForeverRuntime.hasDesktopInput }
+        }
+        .onChange(of: desktopInput, initial: true) { _, desktop in
+            ForeverRuntime.saveInputMode(desktop: desktop)
+        }
+        .task(id: readyMode) {
+            guard let desktop = readyMode else { return }
+            // Let the touch controls release their held inputs before the guest changes mode.
+            try? await Task.sleep(for: .milliseconds(120))
+            guard !Task.isCancelled else { return }
+            ForeverRuntime.sendInputMode(desktop: desktop)
+            try? await Task.sleep(for: .milliseconds(750))
+            guard !Task.isCancelled else { return }
+            ForeverRuntime.sendInputMode(desktop: desktop)
         }
     }
 }

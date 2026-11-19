@@ -16,6 +16,8 @@ The project brings the Android launcher's gold-and-navy interface, German and En
 
 The app selects the tablet HUD when both window dimensions are at least 600 points. The game resolution is fitted to the current aspect ratio at launch. Playport supplies the in-game keyboard.
 
+When iOS detects both a physical keyboard and a mouse, the game restores its desktop action bars, chat, quest tracker, and bindings. Disconnect either accessory to return to the touch HUD with your saved skill arcs. WoW applies changes to protected action bars after combat.
+
 ## Install and run an IPA on iPhone or iPad
 
 **The first installable iOS IPA is pending.** Once it is available, download **WoW-Forever-iOS.ipa**, open it in AltStore Classic and follow the setup prompts in the app. The source build route is available for developers with the Playport toolchain. [iOS releases](https://github.com/bthginfo/wow-forever-ios/releases) · [Build a device IPA](docs/INSTALL.md#build-an-unsigned-device-ipa)

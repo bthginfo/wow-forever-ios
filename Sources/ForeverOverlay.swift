@@ -5,6 +5,7 @@ struct ForeverOverlay: View {
     private enum EditMode { case controls, skills }
 
     var input: (ForeverInput) -> Void
+    var onEditingChange: (Bool) -> Void = { _ in }
 
     @Environment(\.scenePhase) private var phase
     @AppStorage("forever.language") private var language = ForeverLanguage.preferred
@@ -52,9 +53,11 @@ struct ForeverOverlay: View {
         .onChange(of: phase) { _, state in
             if state != .active { releaseAll() }
         }
+        .onChange(of: editMode != nil) { _, editing in onEditingChange(editing) }
         .onDisappear {
             if editMode == .skills { tap(ForeverKeys.cancelSkills, modified: true) }
             releaseAll()
+            onEditingChange(false)
         }
         .foregroundStyle(ForeverPalette.text)
         .tint(ForeverPalette.gold)

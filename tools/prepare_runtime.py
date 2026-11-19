@@ -168,9 +168,9 @@ def port_changes(checkout: Path) -> dict[str, tuple[bytes | None, bytes]]:
         (
             "                    // The text bar over the running game",
             """                    .overlay {
-                        if launch.titleID == ForeverRuntime.titleID && !launch.showsSheet &&
-                            !textBar.isOpen && !menu.isOpen && !menu.quitting && !web.isUp {
-                            ForeverOverlay(input: ForeverRuntime.deliver)
+                        if launch.titleID == ForeverRuntime.titleID {
+                            ForeverGameControls(inputReady: !launch.showsSheet && !textBar.isOpen &&
+                                                !menu.isOpen && !menu.quitting && !web.isUp)
                         }
                     }
                     // The text bar over the running game""",

@@ -56,6 +56,13 @@ enum ForeverCoreTests {
             .key(0xa2, down: true), .key(0xa0, down: true), .key(0x78, down: true),
             .key(0x78, down: false), .key(0xa0, down: false), .key(0xa2, down: false)
         ])
-        print("Region, render size, layouts, saved positions, movement and add-on shortcuts passed.")
+        assert(ForeverKeys.inputMode(desktop: true) == [
+            .key(0xa2, down: true), .key(0xa4, down: true), .key(0xa0, down: true), .key(0x7a, down: true),
+            .key(0x7a, down: false), .key(0xa0, down: false), .key(0xa4, down: false), .key(0xa2, down: false)
+        ])
+        assert(ForeverKeys.inputMode(desktop: false, heldModifiers: [ForeverKeys.control, ForeverKeys.shift]) == [
+            .key(0xa4, down: true), .key(0x7b, down: true), .key(0x7b, down: false), .key(0xa4, down: false)
+        ])
+        print("Region, layouts, render size, saved positions, movement, and touch and desktop shortcuts passed.")
     }
 }

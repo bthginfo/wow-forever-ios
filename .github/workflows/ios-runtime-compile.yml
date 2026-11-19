@@ -1,7 +1,7 @@
 name: iPhoneOS runtime compile check
 on:
   push:
-    branches: [main, iphone-setup]
+    branches: [main, iphone-setup, desktop-input]
     paths:
       - .github/workflows/ios-runtime-compile.yml
       - Tests/prepare_runtime_compile.py

@@ -217,16 +217,24 @@ struct ForeverLayout {
 enum ForeverKeys {
     static let control: UInt8 = 0xa2
     static let shift: UInt8 = 0xa0
+    static let alt: UInt8 = 0xa4
     static let editSkills: UInt8 = 0x76
     static let saveSkills: UInt8 = 0x70
     static let cancelSkills: UInt8 = 0x71
     static let resetSkills: UInt8 = 0x24
 
     static func press(_ key: UInt8, modified: Bool = false) -> [ForeverInput] {
-        let tap: [ForeverInput] = [.key(key, down: true), .key(key, down: false)]
-        guard modified else { return tap }
-        return [.key(control, down: true), .key(shift, down: true)] + tap +
-            [.key(shift, down: false), .key(control, down: false)]
+        chord(key, modifiers: modified ? [control, shift] : [])
+    }
+
+    static func inputMode(desktop: Bool, heldModifiers: Set<UInt8> = []) -> [ForeverInput] {
+        chord(desktop ? 0x7a : 0x7b, modifiers: [control, alt, shift].filter { !heldModifiers.contains($0) })
+    }
+
+    private static func chord(_ key: UInt8, modifiers: [UInt8]) -> [ForeverInput] {
+        let pressed = modifiers.map { ForeverInput.key($0, down: true) }
+        let released = modifiers.reversed().map { ForeverInput.key($0, down: false) }
+        return pressed + [.key(key, down: true), .key(key, down: false)] + released
     }
 
     static func movement(_ delta: CGSize, radius: CGFloat, held: Set<UInt8>) -> Set<UInt8> {
