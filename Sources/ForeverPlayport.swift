@@ -82,7 +82,7 @@ struct ForeverRuntimeHome: View {
     var body: some View {
         ForeverLauncher(
             installed: title?.canPlay == true,
-            runtimeReady: UserDefaults.standard.bool(forKey: SetupState.leftKey) && MemoryLimit.entitled,
+            runtimeReady: UserDefaults.standard.bool(forKey: SetupState.leftKey) && MemoryLimit.entitled == true,
             canInstall: store.listing(ForeverRuntime.product)?.offered == true && !store.loading,
             clientBuild: store.listing(ForeverRuntime.product)?.version,
             status: library.preparing[ForeverRuntime.titleID] ?? setup.message ?? store.error,

@@ -127,6 +127,13 @@ def port_changes(checkout: Path) -> dict[str, tuple[bytes | None, bytes]]:
         ),
     )
     edit(
+        "app/Sources/S1Probe/UI/Pad/PadTheme.swift",
+        ("            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { MainActor.assumeIsolated { WindowInsets.shared.read() } }",
+         "            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {\n"
+         "                MainActor.assumeIsolated { _ = WindowInsets.shared.read() }\n"
+         "            }"),
+    )
+    edit(
         "app/Sources/S1Probe/HostIO.swift",
         ("    private func send(_ o: MixerOutput) {",
          "    func sendForeverInput(_ output: MixerOutput) { send(output) }\n\n    private func send(_ o: MixerOutput) {"),

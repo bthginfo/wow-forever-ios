@@ -5,6 +5,7 @@
 import hashlib
 from pathlib import Path
 import runpy
+import shutil
 import subprocess
 import sys
 
@@ -15,7 +16,9 @@ package.mkdir(parents=True)
 sources = package / "Sources"
 sources.mkdir()
 for source in (app / "Sources").iterdir():
-    if source.name != "WinIOS":
+    if source.name == "Relaunch":
+        shutil.copytree(source, sources / source.name)
+    elif source.name != "WinIOS":
         (sources / source.name).symlink_to(source, target_is_directory=source.is_dir())
 for directory in app.iterdir():
     if (directory / "Package.swift").is_file():
@@ -45,6 +48,11 @@ for line in (app / "artifacts.tsv").read_text().splitlines():
             with patch.open("rb") as content:
                 subprocess.run(["patch", "--quiet", "--forward", "--fuzz=0", f"-p{strip}",
                                 "-d", str(destination.parent)], stdin=content, check=True)
+
+# Import all public headers of these targets when compiling with Apple's SwiftPM.
+for module in ("Relaunch", "WinIOS"):
+    module_map = sources / module / "include" / "module.modulemap"
+    module_map.write_text(f'module {module} {{\n  umbrella "."\n  export *\n}}\n')
 
 manifest = (app / "Package.swift").read_text()
 frameworks = ', "KosmicKrisp", "MesaEGL", "MesaGallium"'
