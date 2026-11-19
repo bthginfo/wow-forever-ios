@@ -66,7 +66,7 @@ final class ForeverUITests: XCTestCase {
         XCTAssertEqual(bags.label, "Taschen")
 
         let snapshot = XCTAttachment(screenshot: app.screenshot())
-        snapshot.name = "Saved HUD on \(XCUIDevice.shared.model)"
+        snapshot.name = "Saved HUD after relaunch"
         snapshot.lifetime = .keepAlways
         add(snapshot)
     }
