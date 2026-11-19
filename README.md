@@ -55,6 +55,8 @@ Once setup is ready, choose your region, tap **Download and install**, and leave
 
 The launcher and touch overlay passed automated interaction tests on a simulated iPhone 16 Pro and iPad Pro. The same run also checked the Playport input library and the Forever Touch mobile profile logic. Installation, JIT and gameplay on physical devices are pending. [Test report](https://github.com/bthginfo/wow-forever-ios/actions/runs/44478093466) · [Run the preview locally](docs/INSTALL.md#iphone-simulator)
 
+The Playport app target also compiled with Xcode 26.6 and the iPhoneOS SDK. That check covers source compilation before runtime linking, IPA packaging and signing. [iPhoneOS compile report](https://github.com/bthginfo/wow-forever-ios/actions/runs/44483673108)
+
 ## Source, credits and use at your own risk
 
 This is an unofficial community project. Use it at your own risk. World of Warcraft, Battle.net and the associated game content and marks belong to Blizzard Entertainment and the respective rights holders. Blizzard neither sponsors nor supports this port.

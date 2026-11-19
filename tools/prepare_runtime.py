@@ -54,6 +54,52 @@ def port_changes(checkout: Path) -> dict[str, tuple[bytes | None, bytes]]:
         ),
     )
     edit(
+        "app/GOGClient/Sources/GOGClientKit/GalaxyListener.swift",
+        ("            let fds = [listenFD] + Array(connections)",
+         "            let fds = [listenFD] + Array(self.connections)"),
+    )
+    edit(
+        "app/PlayportKit/Sources/PlayportKit/Catalog.swift",
+        ("    private var storeRaw: Store? = nil", "    var storeRaw: Store? = nil"),
+    )
+    edit(
+        "app/PlayportKit/Sources/PlayportKit/ActionPicker.swift",
+        (
+            r"""    static let keyboard: [[(UInt8, String, Double)]] = [
+        [(0x1B, "Esc", 1.2)] + (0..<12).map { (UInt8(0x70 + $0), "F\($0 + 1)", 1) },
+        [(0xC0, "`", 1)] + Array("1234567890").map { (UInt8($0.asciiValue!), String($0), 1) }
+            + [(0xBD, "-", 1), (0xBB, "=", 1), (0x08, "⌫", 1.4)],
+        [(0x09, "Tab", 1.4)] + Array("QWERTYUIOP").map { (UInt8($0.asciiValue!), String($0), 1) }
+            + [(0xDB, "[", 1), (0xDD, "]", 1), (0xDC, "\\", 1)],
+        [(0x14, "Caps", 1.6)] + Array("ASDFGHJKL").map { (UInt8($0.asciiValue!), String($0), 1) }
+            + [(0xBA, ";", 1), (0xDE, "'", 1), (0x0D, "Enter", 1.6)],
+        [(0xA0, "Shift", 2)] + Array("ZXCVBNM").map { (UInt8($0.asciiValue!), String($0), 1) }
+            + [(0xBC, ",", 1), (0xBE, ".", 1), (0xBF, "/", 1), (0xA1, "Shift", 1.6)],
+        [(0xA2, "Ctrl", 1.3), (0xA4, "Alt", 1.2), (0x20, "Space", 6), (0xA5, "Alt", 1.2),
+         (0x25, "←", 1), (0x26, "↑", 1), (0x28, "↓", 1), (0x27, "→", 1)],
+    ]""",
+            r"""    static let keyboard: [[(UInt8, String, Double)]] = {
+        typealias Key = (UInt8, String, Double)
+        func characters(_ value: String) -> [Key] {
+            value.map { ($0.asciiValue!, String($0), 1) }
+        }
+        let functionKeys: [Key] = (0..<12).map { (UInt8(0x70 + $0), "F\($0 + 1)", 1) }
+        let functionRow: [Key] = [(0x1B, "Esc", 1.2)] + functionKeys
+        let numberRow: [Key] = [(0xC0, "`", 1)] + characters("1234567890")
+            + [(0xBD, "-", 1), (0xBB, "=", 1), (0x08, "⌫", 1.4)]
+        let topRow: [Key] = [(0x09, "Tab", 1.4)] + characters("QWERTYUIOP")
+            + [(0xDB, "[", 1), (0xDD, "]", 1), (0xDC, "\\", 1)]
+        let homeRow: [Key] = [(0x14, "Caps", 1.6)] + characters("ASDFGHJKL")
+            + [(0xBA, ";", 1), (0xDE, "'", 1), (0x0D, "Enter", 1.6)]
+        let bottomRow: [Key] = [(0xA0, "Shift", 2)] + characters("ZXCVBNM")
+            + [(0xBC, ",", 1), (0xBE, ".", 1), (0xBF, "/", 1), (0xA1, "Shift", 1.6)]
+        let modifierRow: [Key] = [(0xA2, "Ctrl", 1.3), (0xA4, "Alt", 1.2), (0x20, "Space", 6), (0xA5, "Alt", 1.2),
+                                 (0x25, "←", 1), (0x26, "↑", 1), (0x28, "↓", 1), (0x27, "→", 1)]
+        return [functionRow, numberRow, topRow, homeRow, bottomRow, modifierRow]
+    }()""",
+        ),
+    )
+    edit(
         "app/BattleNetClient/Sources/BattleNetClientKit/BattleNetProducts.swift",
         ('    case wowAnniversary = "wow_anniversary"', '    case wowAnniversary = "wow_anniversary"\n    case wowForever = "wowf"'),
         ('        case .wow: return "World of Warcraft"', '        case .wow: return "World of Warcraft"\n        case .wowForever: return "World of Warcraft Forever"'),
@@ -79,6 +125,13 @@ def port_changes(checkout: Path) -> dict[str, tuple[bytes | None, bytes]]:
             }
             settings.graphics = bnet.graphics""",
         ),
+    )
+    edit(
+        "app/Sources/S1Probe/UI/Pad/PadTheme.swift",
+        ("            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { MainActor.assumeIsolated { WindowInsets.shared.read() } }",
+         "            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {\n"
+         "                MainActor.assumeIsolated { _ = WindowInsets.shared.read() }\n"
+         "            }"),
     )
     edit(
         "app/Sources/S1Probe/HostIO.swift",
