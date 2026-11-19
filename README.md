@@ -8,7 +8,7 @@ The project brings the Android launcher's gold-and-navy interface, German and En
 
 | Area | Implementation |
 | --- | --- |
-| Launcher | Status panel, Battle.net region, 720p/900p/1080p render presets and English/German interface |
+| Launcher | One main button for download, setup and play, with region selection and 720p/900p/1080p render presets. English or German is suggested from the device language. |
 | Touch controls | Movement stick, right-drag camera, Jump, Target and Interact, with a compact phone layout and tablet layout |
 | In-game toolbar | Chat, Bags, Map, Character, Talents, Quests, Spellbook, collapsible toolbar, text input and fullscreen controls |
 | Editing | Move and save touch-control positions. The shared Forever Touch Lua add-on provides the two skill arcs and per-character spell and item editing. |
@@ -18,7 +18,7 @@ The app selects the tablet HUD when both window dimensions are at least 600 poin
 
 ## Install and run an IPA on iPhone or iPad
 
-**An installable release IPA is pending.** Use the source build instructions for a development build. The sideloading steps apply when you have a device IPA from this project. [Releases](https://github.com/bthginfo/wow-forever-ios/releases)
+**The first installable iOS IPA is pending.** Once it is available, download **WoW-Forever-iOS.ipa**, open it in AltStore Classic and follow the setup prompts in the app. The source build route is available for developers with the Playport toolchain. [iOS releases](https://github.com/bthginfo/wow-forever-ios/releases) · [Build a device IPA](docs/INSTALL.md#build-an-unsigned-device-ipa)
 
 ### 1. Prepare the device and install the app
 
@@ -28,16 +28,16 @@ Pair or connect the device to the computer used for setup. On the device, open *
 
 | Route | Steps |
 | --- | --- |
-| Build and install from source on x86-64 Linux | Clone this repo, prepare the pinned Playport checkout and install its Linux toolchain and iPhoneOS SDK. Sign with your Apple Account, build and install on the paired device. [Source build commands](docs/INSTALL.md#physical-iphone-or-ipad) |
-| Sign an existing IPA with the patched `xtool` on Linux | Set up the Playport signing tools and pair the phone. Use the patched signer to provision the app ID and helper extension, then install the IPA. [Re-sign and install an IPA](docs/INSTALL.md#re-sign-and-install-an-existing-ipa) |
 | Sideload an existing IPA with AltStore Classic on macOS or Windows | Use AltServer to install AltStore Classic on your device. Save the IPA to Files, open **My Apps → +** in AltStore, and select the file. Keep the app extensions if prompted. Playport documents support for **Increased Memory Limit** with AltStore Classic 2.2 or later. [AltStore Classic setup](https://faq.altstore.io/altstore-classic) · [Playport signing tools](https://github.com/playportdev/playport/blob/06e83ca597b6383e5c5fc60f627892edb560251c/docs/DISTRIBUTION.md#6-signing-tools-and-the-memory-limit) |
+| Sign an existing IPA with the patched `xtool` on Linux | Set up the Playport signing tools and pair the phone. Use the patched signer to provision the app ID and helper extension, then install the IPA. [Re-sign and install an IPA](docs/INSTALL.md#re-sign-and-install-an-existing-ipa) |
 | Try SideStore, Sideloadly or PlumeImpactor with an existing IPA | Follow the sideloader's setup guide and retain the app extensions. Open **Runtime setup** afterward and check that **Memory** is on. The pinned Playport docs cover a SideStore 0.7.0 entitlement issue and its remedy. These routes still need a WoW Forever device test. [SideStore setup](https://docs.sidestore.io/docs/installation/install.html) · [Sideloadly](https://sideloadly.io/) · [PlumeImpactor](https://github.com/khcrysalis/PlumeImpactor) · [Playport memory instructions](https://github.com/playportdev/playport/blob/06e83ca597b6383e5c5fc60f627892edb560251c/README.md#sidestore-when-memory-has-no-tick) |
+| Build and install from source on x86-64 Linux | Set up the pinned Playport toolchain and build the device IPA. Sign with your Apple Account and install on the paired device. [Source build commands](docs/INSTALL.md#physical-iphone-or-ipad) |
 
 A free Apple Personal Team can provision up to three apps at a time. Its profiles expire after seven days. Refresh the app with your sideloader or sign and install it again under the same team and bundle ID. With the current Playport app ID, installing over an existing Playport build under the same team upgrades that installation. [Apple's Personal Team limits](https://developer.apple.com/help/account/basics/about-your-developer-account/) · [Playport first-install and refresh guide](https://github.com/playportdev/playport/blob/06e83ca597b6383e5c5fc60f627892edb560251c/docs/DEVICE.md#free-team-limits)
 
 ### 2. Set up JIT before pressing Play
 
-The runtime needs JIT to translate the Windows game. In **WoW Forever iOS**, open **Runtime setup**. You can revisit the Playport checklist through **Settings → Setup check**. Verify that **Increased Memory Limit** is enabled. If it is off, re-sign the IPA with a compatible tool and check again. [Playport JIT and setup checks](https://github.com/playportdev/playport/blob/06e83ca597b6383e5c5fc60f627892edb560251c/docs/DEVICE.md#jit-activation)
+The runtime needs JIT to translate the Windows game. After the game download, the main button opens the relevant **Runtime setup** step if a requirement is missing. You can revisit the checklist through **Settings → Setup check**. Verify that **Increased Memory Limit** is enabled. If it is off, re-sign the IPA with a compatible tool and check again. [Playport JIT and setup checks](https://github.com/playportdev/playport/blob/06e83ca597b6383e5c5fc60f627892edb560251c/docs/DEVICE.md#jit-activation)
 
 | JIT method | Setup |
 | --- | --- |
@@ -49,13 +49,13 @@ Keep device pairing files and Apple signing credentials private. StikDebug and L
 
 ### 3. Download WoW Forever and launch it
 
-Once setup is ready, choose your region, tap **Download and install**, and leave the app open while it downloads the Windows client from Blizzard. Tap **Play World of Warcraft** and sign in inside the game using a Battle.net account with WoW Forever access. Use the on-screen toolbar for chat, bags, maps and control editing. The automatic browser sign-in used by the Android release is pending on iOS.
+Choose your region, tap **Download and install**, and leave the app open while it downloads the Windows client from Blizzard. The launcher shows progress and offers **Resume download** if the download is paused. Follow any setup prompt, then tap **Play World of Warcraft** and sign in inside the game using a Battle.net account with WoW Forever access. Use the on-screen toolbar for chat, bags, maps and control editing. The automatic browser sign-in used by the Android release is pending on iOS.
 
 ## Tests
 
-The launcher and touch overlay passed automated interaction tests on a simulated iPhone 16 Pro and iPad Pro. The same run also checked the Playport input library and the Forever Touch mobile profile logic. Installation, JIT and gameplay on physical devices are pending. [Test report](https://github.com/bthginfo/wow-forever-ios/actions/runs/44478093466) · [Run the preview locally](docs/INSTALL.md#iphone-simulator)
+GitHub Actions tests the launcher and touch controls on a simulated iPhone 16 Pro and iPad Pro. The first-launch test uses simulated download progress, device and JIT setup, and sign-in. The same workflow checks the Playport input library and the Forever Touch mobile profile logic. Installation, JIT, a real Battle.net sign-in and gameplay on physical devices are pending. [Interaction test reports](https://github.com/bthginfo/wow-forever-ios/actions/workflows/ios-interactions.yml) · [Run the preview locally](docs/INSTALL.md#iphone-simulator)
 
-The Playport app target also compiled with Xcode 26.6 and the iPhoneOS SDK. That check covers source compilation before runtime linking, IPA packaging and signing. [iPhoneOS compile report](https://github.com/bthginfo/wow-forever-ios/actions/runs/44483673108)
+The iPhoneOS workflow compiles the Playport app target with Xcode and the iPhoneOS SDK. That check covers source compilation before runtime linking, IPA packaging and signing. [iPhoneOS compile reports](https://github.com/bthginfo/wow-forever-ios/actions/workflows/ios-runtime-compile.yml)
 
 ## Source, credits and use at your own risk
 

@@ -113,11 +113,20 @@ def port_changes(checkout: Path) -> dict[str, tuple[bytes | None, bytes]]:
         "app/Sources/S1Probe/UI/AppShell.swift",
         ("            case .home: HomeView(installs: model.installs)",
          "            case .home: ForeverRuntimeHome(installs: model.installs)"),
-    )
-    edit(
-        "app/Sources/S1Probe/UI/SetupView.swift",
-        ('        firstRun = true\n        Self.log("first run: the checklist")',
-         '        firstRun = true\n        skip(.steam)\n        Self.log("first run: the checklist")'),
+        (
+            """            // Until each store has listed its games (today Steam's restore and list) and
+            // Home's art is loaded, the opening animation covers the shell.
+            opening.run { [model, library] in
+                while !model.listedOnce || !library.scannedOnce { try? await Task.sleep(for: .milliseconds(50)) }
+                await HomeView.loadArt(titles: library.catalog.titles, model: model)
+            }""",
+            """            // The Forever launcher only needs the installed game catalog.
+            opening.run { [library] in
+                while !library.scannedOnce && !Task.isCancelled { try? await Task.sleep(for: .milliseconds(50)) }
+            }""",
+        ),
+        ("            // A first run: the checklist (UI/SetupView.swift).\n            SetupState.shared.showAtStartIfFirstRun()\n",
+         "            // The Forever launcher opens setup when the game needs it.\n"),
     )
     edit(
         "app/Sources/S1Probe/UI/BattleNetStore.swift",

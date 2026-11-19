@@ -108,7 +108,7 @@ struct ForeverRuntimeHome: View {
             installed: title?.canPlay == true,
             runtime: runtime,
             canInstall: listing?.offered == true,
-            checking: store.loading || store.sizing.contains(ForeverRuntime.product),
+            checking: library.scanning || store.sizing.contains(ForeverRuntime.product),
             transfer: transfer,
             clientBuild: listing?.version,
             status: library.preparing[ForeverRuntime.titleID] ?? setup.message ?? store.sizeErrors[ForeverRuntime.product],

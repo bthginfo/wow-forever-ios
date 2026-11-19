@@ -8,7 +8,18 @@ Use a Mac with Xcode, the iOS 18 or newer simulator runtime and Python 3.
 bash tools/simulator_smoke.sh
 ```
 
-The script checks the layouts and key bindings, builds the SwiftUI app, boots an available iPhone and captures the launcher and HUD under `.build/simulator/`. The **iOS Simulator** workflow runs the same script on GitHub. The preview uses the production SwiftUI views with simulated game state. A physical device is needed to exercise Wine, JIT, Battle.net login and the in-game skill add-on.
+The script checks the layouts and key bindings, builds the SwiftUI app, boots an available iPhone and captures the launcher and HUD under `.build/simulator/`. The **iOS Simulator** workflow runs the same script on GitHub. In the preview, tap through a simulated download, pause and resume it, complete the simulated runtime setup, and choose **Continue with test account** to open the HUD. The preview needs no Blizzard credentials or game files. A physical device is needed to exercise Wine, JIT, Battle.net login and the in-game skill add-on.
+
+## Build an unsigned device IPA
+
+On x86-64 Linux, clone this repository and configure the host tools, LLVM-MinGW with the ARM64EC CRT, and Darwin SDK from Xcode 26.6 for the pinned Playport build. The build uses your local SDK and compiles the runtime from its pinned sources. [Playport host setup](https://github.com/playportdev/playport/blob/06e83ca597b6383e5c5fc60f627892edb560251c/docs/BUILDING.md) · [Apple Developer Downloads](https://developer.apple.com/download/all/)
+
+```sh
+bash tools/build_ipa.sh --preflight
+bash tools/build_ipa.sh
+```
+
+The preflight checks the actual build inputs. The build command prepares the launcher and add-on, builds the Playport release, verifies the IPA and prints the paths to **WoW-Forever-iOS.ipa** and **SHA256SUMS**. Re-sign the IPA before installing it on a device. For a public release, prepare the corresponding source and notices and follow the pinned Playport distribution procedure. [Re-sign and install](#re-sign-and-install-an-existing-ipa) · [Playport distribution guide](https://github.com/playportdev/playport/blob/06e83ca597b6383e5c5fc60f627892edb560251c/docs/DISTRIBUTION.md)
 
 ## Physical iPhone or iPad
 
