@@ -7,8 +7,8 @@ final class ForeverUITests: XCTestCase {
         continueAfterFailure = false
         let app = XCUIApplication()
         XCUIDevice.shared.orientation = .landscapeLeft
+        app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
-        select("forever.language", option: "English", in: app)
 
         let primary = element("forever.primary", in: app)
         XCTAssertTrue(primary.waitForExistence(timeout: 12))

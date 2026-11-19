@@ -6,6 +6,7 @@ on:
       - .github/workflows/ios-runtime-compile.yml
       - Tests/prepare_runtime_compile.py
       - Sources/**
+      - ForeverTouch/**
       - tools/prepare_*
   workflow_dispatch:
 permissions:

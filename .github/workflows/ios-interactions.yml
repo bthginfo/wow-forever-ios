@@ -22,6 +22,7 @@ jobs:
             sudo apt-get install -y lua5.4
           fi
           lua5.4 Tests/ForeverTouchChecks.lua
+          lua5.4 Tests/ForeverTouchProfiles.lua
 
   input:
     name: Playport input library

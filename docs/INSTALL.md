@@ -78,6 +78,6 @@ After installation, check **Runtime setup → Memory** and finish pairing and JI
 
 - Complete startup through character selection and enter the world.
 - Move and turn the camera together, then cast a skill while moving.
-- Edit and save the skill arcs. Restart the game and verify that the character's layout is restored.
+- Edit and save the skill arcs outside combat. The WoW interface reloads to write the changes to disk. Log out, then sign in as the same character and check the skill assignments and arc positions. Restart the app and repeat.
 - Open a game panel from the toolbar, paste in chat, minimize the toolbar and switch fullscreen.
 - Repeat on a tablet and in a smaller window to check both touch layouts.
