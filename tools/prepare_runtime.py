@@ -54,6 +54,11 @@ def port_changes(checkout: Path) -> dict[str, tuple[bytes | None, bytes]]:
         ),
     )
     edit(
+        "app/GOGClient/Sources/GOGClientKit/GalaxyListener.swift",
+        ("            let fds = [listenFD] + Array(connections)",
+         "            var fds = [listenFD]\n            fds.append(contentsOf: connections)"),
+    )
+    edit(
         "app/BattleNetClient/Sources/BattleNetClientKit/BattleNetProducts.swift",
         ('    case wowAnniversary = "wow_anniversary"', '    case wowAnniversary = "wow_anniversary"\n    case wowForever = "wowf"'),
         ('        case .wow: return "World of Warcraft"', '        case .wow: return "World of Warcraft"\n        case .wowForever: return "World of Warcraft Forever"'),
