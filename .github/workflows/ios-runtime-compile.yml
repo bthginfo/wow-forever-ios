@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   playport:
-    runs-on: macos-15
+    runs-on: macos-26
     timeout-minutes: 14
     steps:
       - uses: actions/checkout@v4
@@ -25,6 +25,8 @@ jobs:
           python3 Tests/prepare_runtime_compile.py .build/playport .build/runtime-compile/app
       - name: Compile the Playport app target with the iPhoneOS SDK
         run: |
+          xcodebuild -version
           sdk=$(xcrun --sdk iphoneos --show-sdk-path)
+          xcrun --sdk iphoneos --show-sdk-version
           PLAYPORT_VARIANT=release xcrun swift build --package-path .build/runtime-compile/app \
             --target Playport --triple arm64-apple-ios26.0 --sdk "$sdk" -j 2

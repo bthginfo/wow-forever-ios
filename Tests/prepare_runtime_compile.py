@@ -51,6 +51,13 @@ frameworks = ', "KosmicKrisp", "MesaEGL", "MesaGallium"'
 if manifest.count(frameworks) != 1:
     raise ValueError("Unexpected Playport app target at the pinned commit")
 manifest = manifest.replace(frameworks, "")
+# Give the long target list its own type-checking context.
+prefix, start, declaration = manifest.partition("\nlet package = Package(\n")
+settings, begin_targets, body = declaration.partition("\n    targets: [\n")
+targets, end_targets, suffix = body.rpartition("\n    ]\n)\n")
+if not (start and begin_targets and end_targets):
+    raise ValueError("Unexpected Swift package declaration at the pinned commit")
+manifest = f"{prefix}\nlet appTargets: [Target] = [\n{targets}\n]\n{start}{settings}\n    targets: appTargets\n)\n{suffix}"
 # These binary frameworks are staged for linking and packaging. This build stops at compilation.
 manifest += '''
 package.products.removeAll { $0.name == "PlayportJIT" }
