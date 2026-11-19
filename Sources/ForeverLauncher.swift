@@ -14,8 +14,10 @@ enum ForeverPalette {
 
 struct ForeverLauncher: View {
     var installed: Bool
-    var runtimeReady: Bool
+    var runtime: ForeverRuntimeReadiness
     var canInstall: Bool
+    var checking: Bool = false
+    var transfer: ForeverTransfer?
     var clientBuild: String?
     var status: String?
     var simulator: Bool = false
@@ -24,14 +26,19 @@ struct ForeverLauncher: View {
     var refresh: (ForeverOptions) async -> Void
     var setup: () -> Void
     var details: () -> Void
+    var showDownload: () -> Void
+    var resumeDownload: () -> Void
 
-    @AppStorage("forever.language") private var language = ForeverLanguage.en
+    @AppStorage("forever.language") private var language = ForeverLanguage.preferred
     @AppStorage("forever.region") private var region = ForeverRegion.suggested(for: Locale.current.region?.identifier)
     @AppStorage("forever.resolution") private var resolution = ForeverResolution.hdPlus
     @State private var busy = false
     @State private var failure: String?
 
     private var options: ForeverOptions { .init(language: language, region: region, resolution: resolution) }
+    private var primary: ForeverLaunchAction {
+        .next(installed: installed, runtime: runtime, transfer: transfer, checking: checking, canInstall: canInstall)
+    }
 
     var body: some View {
         ScrollView {
@@ -39,14 +46,8 @@ struct ForeverLauncher: View {
                 header
                 readiness
                 VStack(spacing: 10) {
-                    Button {
-                        run(installed ? play : install)
-                    } label: {
-                        Label(
-                            installed ? language.text("Play World of Warcraft", "World of Warcraft spielen")
-                                      : language.text("Download and install", "Laden und installieren"),
-                            systemImage: installed ? "play.fill" : "arrow.down.to.line"
-                        )
+                    Button(action: performPrimary) {
+                        Label(primary.label(language), systemImage: primary.icon)
                         .font(.system(size: 15, weight: .bold))
                         .textCase(.uppercase)
                         .padding(.vertical, 15)
@@ -55,11 +56,11 @@ struct ForeverLauncher: View {
                         .background(ForeverPalette.bronze, in: RoundedRectangle(cornerRadius: 14))
                     }
                     .buttonStyle(.plain)
-                    .disabled(busy || (!installed && !canInstall))
-                    .opacity(busy || (!installed && !canInstall) ? 0.5 : 1)
+                    .disabled(busy || primary == .check)
+                    .opacity(busy || primary == .check ? 0.5 : 1)
                     .accessibilityIdentifier("forever.primary")
 
-                    if installed {
+                    if primary == .play {
                         Text(language.text("Sign in with Battle.net when the game opens.",
                                            "Melde dich bei Battle.net an, sobald sich das Spiel öffnet."))
                             .font(.footnote)
@@ -106,7 +107,17 @@ struct ForeverLauncher: View {
                 .font(.system(size: 13, weight: .bold)).textCase(.uppercase)
                 .foregroundStyle(ForeverPalette.gold)
             requirement(language.text("WoW Forever client", "WoW-Forever-Client"), installed)
-            requirement(language.text("Wine runtime setup", "Wine-Laufzeit vorbereitet"), runtimeReady)
+            switch runtime {
+            case .setupRequired:
+                requirement(language.text("Runtime setup required", "Laufzeit muss eingerichtet werden"), false)
+            case .startsWithGame:
+                Label(language.text("Runtime setup continues with Play", "Laufzeit wird beim Spielen eingerichtet"),
+                      systemImage: "arrow.right.circle")
+                    .font(.system(size: 14))
+                    .foregroundStyle(ForeverPalette.muted)
+            case .configured:
+                requirement(language.text("Runtime configured", "Laufzeit eingerichtet"), true)
+            }
             if let clientBuild {
                 Label(clientBuild, systemImage: "shippingbox").font(.footnote)
             }
@@ -118,6 +129,22 @@ struct ForeverLauncher: View {
             .font(.footnote)
             .foregroundStyle(ForeverPalette.muted)
             if busy { ProgressView() }
+            if let transfer {
+                switch transfer {
+                case let .active(progress, message):
+                    if let progress, progress.isFinite {
+                        ProgressView(value: min(1, max(0, progress)))
+                    } else {
+                        ProgressView()
+                    }
+                    Text(message).font(.footnote)
+                        .accessibilityIdentifier("forever.download.status")
+                case let .paused(reason):
+                    Text(reason ?? language.text("Download paused", "Download pausiert"))
+                        .font(.footnote)
+                        .accessibilityIdentifier("forever.download.status")
+                }
+            }
             if let message = failure ?? status {
                 Text(message).font(.footnote).foregroundStyle(failure == nil ? ForeverPalette.muted : .orange)
                     .accessibilityIdentifier("forever.status")
@@ -139,6 +166,7 @@ struct ForeverLauncher: View {
         Picker(selection: $region) {
             ForEach(ForeverRegion.allCases) { Text($0.label(language)).tag($0) }
         } label: { Text(language.text("Region", "Region")) }
+        .disabled(transfer != nil || busy)
         .accessibilityIdentifier("forever.region")
     }
 
@@ -158,7 +186,7 @@ struct ForeverLauncher: View {
 
     private var tools: some View {
         HStack(spacing: 16) {
-            Button { Task { await refresh(options) } } label: {
+            Button { run(refresh) } label: {
                 Label(language.text("Refresh", "Aktualisieren"), systemImage: "arrow.clockwise")
             }
             Button(action: setup) {
@@ -171,6 +199,18 @@ struct ForeverLauncher: View {
         .font(.footnote)
         .buttonStyle(.plain)
         .foregroundStyle(ForeverPalette.muted)
+    }
+
+    private func performPrimary() {
+        switch primary {
+        case .check: break
+        case .refresh: run(refresh)
+        case .install: run(install)
+        case .downloads: showDownload()
+        case .resume: resumeDownload()
+        case .setup: setup()
+        case .play: run(play)
+        }
     }
 
     private func run(_ action: @escaping (ForeverOptions) async throws -> Void) {

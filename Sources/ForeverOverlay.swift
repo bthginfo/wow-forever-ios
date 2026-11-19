@@ -7,7 +7,7 @@ struct ForeverOverlay: View {
     var input: (ForeverInput) -> Void
 
     @Environment(\.scenePhase) private var phase
-    @AppStorage("forever.language") private var language = ForeverLanguage.en
+    @AppStorage("forever.language") private var language = ForeverLanguage.preferred
     @AppStorage("forever.fullscreen") private var fullscreen = true
     @AppStorage("forever.toolbarMinimized") private var toolbarMinimized = false
     @AppStorage("forever.positions") private var savedPositions = Data()
@@ -123,6 +123,7 @@ struct ForeverOverlay: View {
             }
         }
         .contentShape(round)
+        .accessibilityElement(children: .ignore)
         .accessibilityLabel(control.label(language))
         .accessibilityIdentifier("forever.control." + control.rawValue)
     }
@@ -143,6 +144,7 @@ struct ForeverOverlay: View {
                 iconButton("chevron.down", language.text("Show toolbar", "Menüleiste ausklappen")) {
                     toolbarMinimized = false
                 }
+                .accessibilityIdentifier("forever.toolbar.expand")
             } else {
                 HStack(spacing: 0) {
                     ScrollView(.horizontal) {
@@ -161,6 +163,7 @@ struct ForeverOverlay: View {
                     iconButton("chevron.up", language.text("Minimize toolbar", "Menüleiste einklappen")) {
                         toolbarMinimized = true
                     }
+                    .accessibilityIdentifier("forever.toolbar.collapse")
                     more
                 }
                 .font(.system(size: 13, weight: .medium))

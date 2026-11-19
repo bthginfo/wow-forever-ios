@@ -6,6 +6,10 @@ import CoreGraphics
 
 enum ForeverLanguage: String, CaseIterable, Identifiable {
     case en, de
+    static var preferred: Self {
+        let code = Locale.preferredLanguages.first?.split(separator: "-").first
+        return code == "de" ? .de : .en
+    }
     var id: String { rawValue }
     var label: String { self == .de ? "Deutsch" : "English" }
     func text(_ english: String, _ german: String) -> String { self == .de ? german : english }
@@ -55,6 +59,49 @@ struct ForeverOptions: Equatable {
     var language: ForeverLanguage
     var region: ForeverRegion
     var resolution: ForeverResolution
+}
+
+enum ForeverRuntimeReadiness: Equatable {
+    case setupRequired, startsWithGame, configured
+}
+
+enum ForeverTransfer {
+    case active(progress: Double?, message: String)
+    case paused(reason: String?)
+}
+
+enum ForeverLaunchAction: Equatable {
+    case check, refresh, install, downloads, resume, setup, play
+
+    static func next(installed: Bool, runtime: ForeverRuntimeReadiness, transfer: ForeverTransfer?,
+                     checking: Bool, canInstall: Bool) -> Self {
+        if case .paused? = transfer { return .resume }
+        if transfer != nil { return .downloads }
+        if installed { return runtime == .setupRequired ? .setup : .play }
+        if checking { return .check }
+        return canInstall ? .install : .refresh
+    }
+
+    func label(_ language: ForeverLanguage) -> String {
+        switch self {
+        case .check: language.text("Checking for game files", "Spieldateien werden gesucht")
+        case .refresh: language.text("Check availability", "Verfügbarkeit prüfen")
+        case .install: language.text("Download and install", "Laden und installieren")
+        case .downloads: language.text("View download", "Download anzeigen")
+        case .resume: language.text("Resume download", "Download fortsetzen")
+        case .setup: language.text("Finish runtime setup", "Laufzeit einrichten")
+        case .play: language.text("Play World of Warcraft", "World of Warcraft spielen")
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .check, .refresh: "arrow.clockwise"
+        case .install, .downloads, .resume: "arrow.down.to.line"
+        case .setup: "gearshape"
+        case .play: "play.fill"
+        }
+    }
 }
 
 enum ForeverControl: String, CaseIterable, Identifiable {

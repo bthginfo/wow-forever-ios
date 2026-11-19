@@ -8,12 +8,12 @@ identifier="app.wowforever.ios.simulator"
 app="$output/$product.app"
 phase="${1:-all}"
 case "$phase" in
-    all|build|run) ;;
-    *) printf 'Usage: %s [build|run]\n' "$0" >&2; exit 2 ;;
+    all|build|run|select) ;;
+    *) printf 'Usage: %s [build|run|select [iPhone|iPad]]\n' "$0" >&2; exit 2 ;;
 esac
-mkdir -p "$app"
 
-if [[ "$phase" != run ]]; then
+if [[ "$phase" != run && "$phase" != select ]]; then
+    mkdir -p "$app"
     printf 'Building host layout tests\n'
     xcrun swiftc -swift-version 5 Sources/ForeverCore.swift Tests/ForeverCoreTests.swift -o "$output/core-tests"
     "$output/core-tests"
@@ -53,17 +53,17 @@ PYTHON
     codesign --force --sign - "$app"
 fi
 [[ "$phase" != build ]] || exit 0
-test -x "$app/$product"
 
 sdk_version=$(xcrun --sdk iphonesimulator --show-sdk-version)
-printf 'Looking for an iPhone Simulator for SDK %s\n' "$sdk_version"
-device_info=$(xcrun simctl list devices available -j | python3 -c '
+family="${2:-iPhone}"
+device=$(xcrun simctl list devices available -j | python3 -c '
 import json
 import re
 import sys
 
 devices = json.load(sys.stdin)["devices"]
 sdk = tuple(map(int, sys.argv[1].split(".")[:2]))
+family = sys.argv[2]
 versions = []
 for runtime, phones in devices.items():
     match = re.search(r"\.SimRuntime\.iOS-(\d+)-(\d+)(?:-(\d+))?", runtime)
@@ -73,14 +73,18 @@ for runtime, phones in devices.items():
 for version, _, phones in sorted(versions, key=lambda item: (item[0][:2] == sdk, item[0], item[1]), reverse=True):
     if version[0] < 18:
         continue
-    for phone in phones:
-        if phone["name"].startswith("iPhone") and phone["isAvailable"]:
-            print(phone["udid"])
+    for device in phones:
+        if device["name"].startswith(family) and device["isAvailable"]:
+            print(device["udid"])
             raise SystemExit(0)
-raise SystemExit("No iOS 18+ iPhone Simulator available")
-' "$sdk_version")
-device="$device_info"
-printf 'Booting iPhone Simulator %s\n' "$device"
+raise SystemExit(f"No iOS 18+ {family} Simulator available")
+' "$sdk_version" "$family")
+if [[ "$phase" == select ]]; then
+    printf '%s\n' "$device"
+    exit 0
+fi
+test -x "$app/$product"
+printf 'Booting %s Simulator %s\n' "$family" "$device"
 xcrun simctl bootstatus "$device" -b
 printf 'Launching the SwiftUI preview\n'
 xcrun simctl install "$device" "$app"

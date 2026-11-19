@@ -10,6 +10,21 @@ enum ForeverCoreTests {
         assert(ForeverRegion.suggested(for: "DE") == .eu)
         assert(ForeverRegion.suggested(for: "hk") == .tw)
         assert(ForeverRegion.suggested(for: nil) == .us)
+        assert(ForeverLaunchAction.next(installed: false, runtime: .setupRequired, transfer: nil,
+                                        checking: true, canInstall: false) == .check)
+        assert(ForeverLaunchAction.next(installed: false, runtime: .setupRequired, transfer: nil,
+                                        checking: false, canInstall: false) == .refresh)
+        assert(ForeverLaunchAction.next(installed: false, runtime: .setupRequired, transfer: nil,
+                                        checking: false, canInstall: true) == .install)
+        assert(ForeverLaunchAction.next(installed: true, runtime: .setupRequired, transfer: nil,
+                                        checking: false, canInstall: true) == .setup)
+        assert(ForeverLaunchAction.next(installed: true, runtime: .startsWithGame, transfer: nil,
+                                        checking: true, canInstall: true) == .play)
+        assert(ForeverLaunchAction.next(installed: false, runtime: .configured, transfer: .paused(reason: nil),
+                                        checking: false, canInstall: true) == .resume)
+        assert(ForeverLaunchAction.next(installed: true, runtime: .configured,
+                                        transfer: .active(progress: 0.3, message: "Updating"),
+                                        checking: false, canInstall: false) == .downloads)
 
         let phone = CGSize(width: 844, height: 390)
         let tablet = CGSize(width: 1180, height: 820)

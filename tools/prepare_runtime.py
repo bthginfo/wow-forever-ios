@@ -111,7 +111,22 @@ def port_changes(checkout: Path) -> dict[str, tuple[bytes | None, bytes]]:
     )
     edit(
         "app/Sources/S1Probe/UI/AppShell.swift",
-        ("            case .home: HomeView(installs: model.installs)", "            case .home: ForeverRuntimeHome()"),
+        ("            case .home: HomeView(installs: model.installs)",
+         "            case .home: ForeverRuntimeHome(installs: model.installs)"),
+    )
+    edit(
+        "app/Sources/S1Probe/UI/SetupView.swift",
+        ('        firstRun = true\n        Self.log("first run: the checklist")',
+         '        firstRun = true\n        skip(.steam)\n        Self.log("first run: the checklist")'),
+    )
+    edit(
+        "app/Sources/S1Probe/UI/BattleNetStore.swift",
+        ("    func loadSizes(_ p: BattleNetProduct) async {",
+         "    func loadSizes(_ p: BattleNetProduct, force: Bool = false) async {"),
+        (r'            if listings.first(where: { $0.product == p && $0.region == r }) == nil || offers["\(p.code)/\(r.rawValue)"] == nil {',
+         r'            if force || listings.first(where: { $0.product == p && $0.region == r }) == nil || offers["\(p.code)/\(r.rawValue)"] == nil {'),
+        ("            let locale = self.locale(p)\n            guard let i",
+         "            if region(p) == r { sizeErrors[p] = nil }\n            let locale = self.locale(p)\n            guard let i"),
     )
     edit(
         "app/Sources/S1Probe/UI/LibraryModel.swift",

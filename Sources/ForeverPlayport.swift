@@ -10,7 +10,8 @@ import UIKit
 @MainActor
 enum ForeverRuntime {
     static let product = BattleNetProduct.wowForever
-    static let titleID = BattleNet.key(product).titleID
+    static let key = BattleNet.key(product)
+    static let titleID = key.titleID
     private static var motion = RelativeMotion()
 
     static func deliver(_ event: ForeverInput) {
@@ -53,7 +54,7 @@ enum ForeverRuntime {
             (name, try Data(contentsOf: source.appendingPathComponent(name)))
         }
         let toc = try String(contentsOf: source.appendingPathComponent("ForeverTouch.toc"), encoding: .utf8)
-        let language = UserDefaults.standard.string(forKey: "forever.language") == "de" ? "de" : "en"
+        let language = UserDefaults.standard.string(forKey: "forever.language") ?? ForeverLanguage.preferred.rawValue
         let manifest = Data(("## X-ForeverTouch-Language: \(language)\n" + toc).utf8)
         assets += [("ForeverTouch.toc", manifest), ("ForeverTouch_Camelot.toc", manifest)]
         try FileManager.default.createDirectory(at: directories, withIntermediateDirectories: true)
@@ -73,45 +74,82 @@ struct ForeverError: LocalizedError {
 }
 
 struct ForeverRuntimeHome: View {
+    @ObservedObject var installs: Downloads
     @ObservedObject private var library = LibraryModel.shared
     @ObservedObject private var store = BattleNetStore.shared
     @ObservedObject private var setup = SetupState.shared
+    @Environment(\.scenePhase) private var scenePhase
 
     private var title: InstalledTitle? { library.title(ForeverRuntime.titleID) }
+
+    private var listing: BattleNetListing? {
+        let product = ForeverRuntime.product
+        guard let listing = store.listing(product), listing.region == store.region(product) else { return nil }
+        return listing
+    }
+
+    private var runtime: ForeverRuntimeReadiness {
+        let facts = setup.facts
+        switch SetupChecklist.beforeLaunch(facts) {
+        case .needs: return .setupRequired
+        case .fixesItself: return .startsWithGame
+        case .go: return facts.jit.usesPairing ? .configured : .startsWithGame
+        }
+    }
+
+    private var transfer: ForeverTransfer? {
+        guard let job = installs.jobs[ForeverRuntime.key] else { return nil }
+        if case let .paused(reason) = job.phase { return .paused(reason: reason) }
+        return .active(progress: job.fraction, message: job.status)
+    }
 
     var body: some View {
         ForeverLauncher(
             installed: title?.canPlay == true,
-            runtimeReady: UserDefaults.standard.bool(forKey: SetupState.leftKey) && MemoryLimit.entitled == true,
-            canInstall: store.listing(ForeverRuntime.product)?.offered == true && !store.loading,
-            clientBuild: store.listing(ForeverRuntime.product)?.version,
-            status: library.preparing[ForeverRuntime.titleID] ?? setup.message ?? store.error,
+            runtime: runtime,
+            canInstall: listing?.offered == true,
+            checking: store.loading || store.sizing.contains(ForeverRuntime.product),
+            transfer: transfer,
+            clientBuild: listing?.version,
+            status: library.preparing[ForeverRuntime.titleID] ?? setup.message ?? store.sizeErrors[ForeverRuntime.product],
             play: play,
             install: install,
             refresh: refresh,
-            setup: { AppNavigation.shared.openSetup() },
+            setup: openSetup,
             details: {
                 if title != nil { AppNavigation.shared.openTitle(ForeverRuntime.titleID) }
                 else { AppNavigation.shared.show(.library) }
-            }
+            },
+            showDownload: { AppNavigation.shared.show(.downloads) },
+            resumeDownload: { installs.resume(ForeverRuntime.key) }
         )
+        .onChange(of: scenePhase, initial: true) {
+            if scenePhase == .active { setup.readTunnel() }
+        }
+    }
+
+    private func openSetup() {
+        if case let .needs(step, _) = SetupChecklist.beforeLaunch(setup.facts) {
+            AppNavigation.shared.openSetup(on: step)
+        } else {
+            AppNavigation.shared.openSetup()
+        }
     }
 
     private func refresh(_ options: ForeverOptions) async {
         applyRegion(options)
         library.refresh()
-        await store.refresh()
+        await store.loadSizes(ForeverRuntime.product, force: true)
     }
 
     private func install(_ options: ForeverOptions) async throws {
         applyRegion(options)
         await store.loadSizes(ForeverRuntime.product)
-        guard store.listing(ForeverRuntime.product)?.offered == true else {
+        guard listing?.offered == true, listing?.region.rawValue == options.region.rawValue else {
             throw ForeverError(options.language.text("WoW Forever is unavailable in this region.",
                                                      "WoW Forever ist in dieser Region nicht verfügbar."))
         }
         if let refusal = store.install(ForeverRuntime.product) { throw ForeverError(refusal) }
-        AppNavigation.shared.show(.downloads)
     }
 
     private func play(_ options: ForeverOptions) async throws {
