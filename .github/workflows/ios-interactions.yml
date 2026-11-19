@@ -1,0 +1,63 @@
+name: iOS interaction checks
+on:
+  push:
+    branches: [device-validation]
+  workflow_dispatch:
+permissions:
+  contents: read
+
+jobs:
+  interaction:
+    name: ${{ matrix.device }} interaction
+    runs-on: macos-15
+    timeout-minutes: 22
+    strategy:
+      fail-fast: false
+      matrix:
+        device: [iPhone, iPad]
+    env:
+      VALIDATION_PROJECT: Tests/UI/ForeverValidation.xcodeproj
+      SIMULATOR_FAMILY: ${{ matrix.device }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Generate the preview and XCUITest project
+        run: |
+          command -v xcodegen || HOMEBREW_NO_AUTO_UPDATE=1 brew install xcodegen
+          mkdir -p .build/validation
+          xcodegen generate --spec Tests/UI/Project.yml
+      - name: Compile the unsigned frontend for arm64 iPhoneOS
+        if: matrix.device == 'iPhone'
+        run: |
+          xcodebuild -project "$VALIDATION_PROJECT" -scheme ForeverPreview \
+            -destination 'generic/platform=iOS' -derivedDataPath .build/validation/device \
+            ARCHS=arm64 CODE_SIGNING_ALLOWED=NO -quiet build
+          binary=.build/validation/device/Build/Products/Debug-iphoneos/ForeverPreview.app/ForeverPreview
+          file "$binary"
+          xcrun vtool -show-build "$binary"
+      - name: Build the preview and UI-test runner
+        run: |
+          device=$(bash tools/simulator_smoke.sh select "$SIMULATOR_FAMILY")
+          printf 'SIMULATOR_ID=%s\n' "$device" >> "$GITHUB_ENV"
+          xcodebuild -project "$VALIDATION_PROJECT" -scheme ForeverPreview \
+            -destination "platform=iOS Simulator,id=$device" -derivedDataPath .build/validation/simulator \
+            -parallel-testing-enabled NO -quiet build-for-testing
+      - name: Boot the simulator
+        timeout-minutes: 8
+        run: xcrun simctl bootstatus "$SIMULATOR_ID" -b
+      - name: Perform the interactions with XCTest
+        timeout-minutes: 9
+        run: |
+          xcodebuild -project "$VALIDATION_PROJECT" -scheme ForeverPreview \
+            -destination "platform=iOS Simulator,id=$SIMULATOR_ID" -derivedDataPath .build/validation/simulator \
+            -parallel-testing-enabled NO -collect-test-diagnostics on-failure \
+            -resultBundlePath .build/validation/Interactions.xcresult test-without-building
+      - name: Upload interaction results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-interactions-${{ matrix.device }}
+          path: .build/validation/Interactions.xcresult
+          if-no-files-found: ignore
+          include-hidden-files: true

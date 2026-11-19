@@ -1,0 +1,50 @@
+name: ForeverValidation
+options:
+  deploymentTarget:
+    iOS: "18.0"
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    TARGETED_DEVICE_FAMILY: "1,2"
+targets:
+  ForeverPreview:
+    type: application
+    platform: iOS
+    sources:
+      - ../../Sources/ForeverCore.swift
+      - ../../Sources/ForeverLauncher.swift
+      - ../../Sources/ForeverOverlay.swift
+      - ../../Simulator/ForeverSimulator.swift
+    info:
+      path: ../../.build/validation/Preview-Info.plist
+      properties:
+        CFBundleDisplayName: Forever Preview
+        UILaunchScreen: {}
+        UIRequiresFullScreen: true
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.wowforever.ios.validation
+  ForeverUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - ForeverUITests.swift
+    dependencies:
+      - target: ForeverPreview
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: app.wowforever.ios.validation.tests
+schemes:
+  ForeverPreview:
+    build:
+      targets:
+        ForeverPreview: all
+        ForeverUITests: [test]
+    test:
+      targets:
+        - name: ForeverUITests
+          parallelizable: false

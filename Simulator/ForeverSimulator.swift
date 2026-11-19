@@ -7,6 +7,8 @@ struct ForeverSimulator: App {
     @State private var playing = ProcessInfo.processInfo.arguments.contains("--hud")
     @State private var textBar = false
     @State private var status: String?
+    @State private var inputEvents: Set<String> = []
+    private let checkInput = ProcessInfo.processInfo.arguments.contains("--check-input")
 
     var body: some Scene {
         WindowGroup {
@@ -18,6 +20,11 @@ struct ForeverSimulator: App {
                         Text("Game surface preview").font(.title2)
                         Text("The iOS Simulator is displaying the launcher controls.")
                             .font(.footnote)
+                        if checkInput {
+                            Text(inputEvents.sorted().joined(separator: ", "))
+                                .font(.caption2)
+                                .accessibilityIdentifier("forever.preview.input")
+                        }
                     }
                     .foregroundStyle(ForeverPalette.muted)
                     .allowsHitTesting(false)
@@ -48,6 +55,12 @@ struct ForeverSimulator: App {
         switch input {
         case .gameMenu: playing = false
         case .textInput: textBar = true
+        case let .key(key, down) where checkInput:
+            inputEvents.insert("key-\(down ? "down" : "up")-\(key)")
+        case let .cameraButton(down) where checkInput:
+            inputEvents.insert(down ? "camera-down" : "camera-up")
+        case let .cameraMotion(dx, dy) where checkInput && (dx != 0 || dy != 0):
+            inputEvents.insert("camera-move")
         default: break
         }
     }
