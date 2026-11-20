@@ -55,13 +55,15 @@ Once setup is ready, choose your region, tap **Download and install**, and leave
 
 Open **More controls → Edit skills → Add set**. Each set has its own left and right arc for spells and usable items. Tap **+** on an arc to add a slot, use **‹** and **›** to edit the other sets, and tap **Save**. With two or more sets, the **Set 1 / 2** button at the bottom of the HUD cycles through them during play. Your existing arc layout becomes **Set 1**. Sets are saved per character.
 
+Spell and item icons show a circular cooldown sweep and the remaining time. Brief cooldowns under two seconds show the sweep alone. Spells with charges show the time until the next charge while recharging.
+
 ## Tests
 
 The launcher and touch overlay passed automated interaction tests on a simulated iPhone 16 Pro and iPad Pro. The same run also checked the Playport input library and the Forever Touch mobile profile logic. Installation, JIT and gameplay on physical devices are pending. [Test report](https://github.com/bthginfo/wow-forever-ios/actions/runs/44478093466) · [Run the preview locally](docs/INSTALL.md#iphone-simulator)
 
 The Playport app target also compiled with Xcode 26.6 and the iPhoneOS SDK. That check covers source compilation before runtime linking, IPA packaging and signing. [iPhoneOS compile report](https://github.com/bthginfo/wow-forever-ios/actions/runs/44483673108)
 
-Run `lua Tests/ForeverTouchProfiles.lua` to check arc set migration, editing and switching with simulated WoW events.
+Run `lua Tests/ForeverTouchProfiles.lua` to check arc set migration, editing, switching and cooldown updates with simulated WoW events.
 
 ## Source, credits and use at your own risk
 
