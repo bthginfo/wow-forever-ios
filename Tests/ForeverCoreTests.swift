@@ -41,6 +41,7 @@ enum ForeverCoreTests {
             .key(0xa2, down: true), .key(0xa0, down: true), .key(0x78, down: true),
             .key(0x78, down: false), .key(0xa0, down: false), .key(0xa2, down: false)
         ])
+        assert(ForeverShortcut.morePanels.map(\.key) == [0x2d, 0x23, 0x21, 0x22, 0x2e])
         print("Region, render size, layouts, saved positions, movement and add-on shortcuts passed.")
     }
 }

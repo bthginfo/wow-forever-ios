@@ -147,7 +147,7 @@ struct ForeverOverlay: View {
                 HStack(spacing: 0) {
                     ScrollView(.horizontal) {
                         HStack(spacing: 16) {
-                            ForEach(ForeverShortcut.allCases) { action in
+                            ForEach(ForeverShortcut.toolbar) { action in
                                 Button(action.label(language)) {
                                     tap(action.key, modified: true)
                                     if action == .chat { input(.textInput) }
@@ -184,6 +184,10 @@ struct ForeverOverlay: View {
                 releaseAll()
                 tap(ForeverKeys.editSkills, modified: true)
                 editMode = .skills
+            }
+            ForEach(ForeverShortcut.morePanels) { action in
+                Button(action.label(language)) { tap(action.key, modified: true) }
+                    .accessibilityIdentifier("forever.shortcut.\(action)")
             }
             Button(language.text("Text input", "Texteingabe")) { input(.textInput) }
             Menu(language.text("Camera sensitivity", "Kameraempfindlichkeit")) {

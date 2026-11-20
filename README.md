@@ -10,7 +10,7 @@ The project brings the Android launcher's gold-and-navy interface, German and En
 | --- | --- |
 | Launcher | Status panel, Battle.net region, 720p/900p/1080p render presets and English/German interface |
 | Touch controls | Movement stick, right-drag camera, Jump, Target and Interact, with a compact phone layout and tablet layout |
-| In-game toolbar | Chat, Bags, Map, Character, Talents, Quests, Spellbook, collapsible toolbar, text input and fullscreen controls |
+| In-game toolbar | Chat, Bags, Map, Character, Talents, Quests, Spellbook, and shortcuts for Professions, Friends, Guild, Group Finder and Collections under More controls |
 | Editing | Move and save touch-control positions. The Forever Touch add-on lets each character save and switch between sets of left and right skill arcs. |
 | Runtime | Playport supplies the download, update check, Windows guest and input. The Android browser-first Battle.net handoff is pending. |
 
@@ -57,13 +57,17 @@ Open **More controls → Edit skills → Add set**. Each set has its own left an
 
 Spell and item icons show a circular cooldown sweep and the remaining time. Brief cooldowns under two seconds show the sweep alone. Spells with charges show the time until the next charge while recharging.
 
+Use **Edit skills → + → Professions** to bind learned actions such as Smelting or Fishing. Saving reloads the WoW interface and confirms **Arc layout saved** after the layout is read back. Saves requested in combat wait until combat ends.
+
+Move and save the chat frame in WoW’s **Edit Mode**. Chat temporarily moves above the mobile keyboard while typing and returns to the saved position afterward.
+
 ## Tests
 
 The launcher and touch overlay passed automated interaction tests on a simulated iPhone 16 Pro and iPad Pro. The same run also checked the Playport input library and the Forever Touch mobile profile logic. Installation, JIT and gameplay on physical devices are pending. [Test report](https://github.com/bthginfo/wow-forever-ios/actions/runs/44478093466) · [Run the preview locally](docs/INSTALL.md#iphone-simulator)
 
 The Playport app target also compiled with Xcode 26.6 and the iPhoneOS SDK. That check covers source compilation before runtime linking, IPA packaging and signing. [iPhoneOS compile report](https://github.com/bthginfo/wow-forever-ios/actions/runs/44483673108)
 
-Run `lua Tests/ForeverTouchProfiles.lua` to check arc set migration, editing, switching and cooldown updates with simulated WoW events.
+Run `lua Tests/ForeverTouchProfiles.lua` to check arc persistence, cooldowns, profession bindings, game panel shortcuts, and chat placement with simulated WoW events.
 
 ## Source, credits and use at your own risk
 
