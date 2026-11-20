@@ -67,9 +67,9 @@ After installation, check **Runtime setup → Memory** and finish pairing and JI
 
 - Complete startup through character selection and enter the world.
 - Move and turn the camera together, then cast a skill while moving.
-- Open **Edit skills**, add a second arc set with a different spell or item, and save. In the HUD, switch sets and verify which action each slot uses. Repeat the switch during combat. Restart the game and verify that the character's sets and selection are restored.
+- Open **Edit skills**, add a second arc set and assign a spell or item. Replace it while the editor is open, then tap **Done**. In the HUD, switch sets and verify which action each slot uses. Repeat the switch during combat. Restart the game and verify that the character's sets and selection are restored.
 - Use a spell with a cooldown, a spell with charges, and a usable item. Verify the countdown on each icon, including after switching away from its set and back.
-- Bind a learned profession action from **Edit skills → + → Professions**. Save during combat and verify the **Arc layout saved** message after combat and reload.
+- Bind a learned profession action from **Edit skills → + → Professions**. Close the editor during combat and verify the **Arc layout saved** message after combat and reload.
 - Move chat in WoW’s **Edit Mode**, save, and close Edit Mode. Open and close the mobile keyboard and verify that chat returns to the saved position.
 - Open the new profession and social panels from **More controls**.
 - Open a game panel from the toolbar, paste in chat, minimize the toolbar and switch fullscreen.

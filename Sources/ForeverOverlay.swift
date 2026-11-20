@@ -53,7 +53,10 @@ struct ForeverOverlay: View {
             if state != .active { releaseAll() }
         }
         .onDisappear {
-            if editMode == .skills { tap(ForeverKeys.cancelSkills, modified: true) }
+            if editMode == .skills {
+                tap(ForeverKeys.saveSkills, modified: true)
+                editMode = nil
+            }
             releaseAll()
         }
         .foregroundStyle(ForeverPalette.text)
@@ -221,11 +224,11 @@ struct ForeverOverlay: View {
                 if mode == .controls { draft = [:] }
                 else { tap(ForeverKeys.resetSkills, modified: true) }
             }
-            Button(language.text("Cancel", "Abbrechen")) {
+            Button(mode == .skills ? language.text("Discard", "Verwerfen") : language.text("Cancel", "Abbrechen")) {
                 if mode == .skills { tap(ForeverKeys.cancelSkills, modified: true) }
                 editMode = nil
             }
-            Button(language.text("Save", "Speichern")) {
+            Button(mode == .skills ? language.text("Done", "Fertig") : language.text("Save", "Speichern")) {
                 if mode == .controls { savedPositions = (try? JSONEncoder().encode(draft)) ?? savedPositions }
                 else { tap(ForeverKeys.saveSkills, modified: true) }
                 editMode = nil
