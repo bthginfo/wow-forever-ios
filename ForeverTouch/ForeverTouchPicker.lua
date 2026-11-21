@@ -76,21 +76,23 @@ function addon.createSlotPicker(parent)
         empty:SetShown(#choices == 0)
     end
 
-    local function showCategory(kind, locate)
+    local function showCategory(kind, locate, requireMatch)
         for _, category in ipairs(categories) do
             if kind == category.kind then
-                currentKind, page = kind, 1
-                choices = category.choices()
+                local entries = category.choices()
+                local target
                 if locate and assigned then
-                    for index, choice in ipairs(choices) do
+                    for index, choice in ipairs(entries) do
                         if choice.kind == assigned.kind and choice.id == assigned.id then
-                            page = math.ceil(index / PAGE_SIZE)
+                            target = math.ceil(index / PAGE_SIZE)
                             break
                         end
                     end
                 end
+                if requireMatch and not target then return false end
+                currentKind, choices, page = kind, entries, target or 1
                 render()
-                return
+                return target ~= nil
             end
         end
     end
@@ -132,7 +134,11 @@ function addon.createSlotPicker(parent)
     function picker:Open(callback, initialKind, current)
         onSelect, assigned = callback, current
         self:SetScale(UIParent:GetHeight() / 720)
-        showCategory(initialKind or currentKind, true)
+        local kind = initialKind or currentKind
+        local found = showCategory(kind, true)
+        if assigned and assigned.kind == "spell" and kind == "spell" and not found then
+            showCategory("profession", true, true)
+        end
         self:Show()
     end
 

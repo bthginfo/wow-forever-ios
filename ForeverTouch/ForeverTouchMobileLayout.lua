@@ -387,6 +387,8 @@ local function chooseBinding(side, index)
     local page = draft.pages[draft.index]
     local list = page.slots[side]
     local old = list[index]
+    local current = old
+    if old and old.kind == "desktop" then current = desktopRecords[old.key] end
     picker:Open(function(binding)
         if not draft or draft.pages[draft.index] ~= page then return end
         if not old or old.kind ~= binding.kind or old.id ~= binding.id then
@@ -396,7 +398,7 @@ local function chooseBinding(side, index)
         end
         selected = nil
         updateEditor()
-    end, old and (old.kind == "item" and "item" or "spell"), old)
+    end, current and (current.kind == "item" and "item" or "spell"), current)
 end
 
 local tools = CreateFrame("Frame", nil, editShield)

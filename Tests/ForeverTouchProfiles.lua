@@ -682,5 +682,8 @@ assert(loadfile(source .. "/ForeverTouchPicker.lua"))("ForeverTouch", addon)
 local picker = addon.createSlotPicker(UIParent)
 picker:Open(function() end, "spell", {kind = "spell", id = 13})
 assert(control("3 / 3") and control("Spell 13").parent.binding.id == 13)
+picker:Open(function() end, "spell", {kind = "spell", id = 301})
+assert(control("Smelting").parent.binding.id == 301 and not control("Professions").enabled,
+    "replacing a profession spell returns to learned profession actions")
 
 print("Passed: arc autosave and recovery, saved switches, cooldowns and charges, item counts, event batching, picker paging, professions, chat and frame limiting.")

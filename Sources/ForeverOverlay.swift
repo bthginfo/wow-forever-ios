@@ -156,11 +156,12 @@ struct ForeverOverlay: View {
                     ScrollView(.horizontal) {
                         HStack(spacing: 16) {
                             ForEach(ForeverShortcut.toolbar) { action in
-                                Button(action.label(language)) {
+                                Button {
                                     tap(action.key, modified: true)
                                     if action == .chat { input(.textInput) }
+                                } label: {
+                                    Text(action.label(language)).frame(minHeight: 44).contentShape(Rectangle())
                                 }
-                                .frame(minHeight: 44)
                                 .accessibilityIdentifier("forever.shortcut.\(action)")
                                 if action == .character {
                                     Menu(language.text("Social", "Kontakte")) {
