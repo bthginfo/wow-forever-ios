@@ -51,6 +51,14 @@ Keep device pairing files and Apple signing credentials private. StikDebug and L
 
 Once setup is ready, choose your region, tap **Download and install**, and leave the app open while it downloads the Windows client from Blizzard. Tap **Play World of Warcraft** and sign in inside the game using a Battle.net account with WoW Forever access. Use the on-screen toolbar for chat, bags, maps and control editing. The automatic browser sign-in used by the Android release is pending on iOS.
 
+## Mobile HUD in this source build
+
+**Chat** opens the game chat. **Latest** jumps to the most recent line. **Character** and **Professions** have direct toolbar buttons. **Social** opens Friends, Guild and Group Finder. Swipe the toolbar horizontally on narrow screens.
+
+When a charge is still available, the recharge sweep stays light. Spent charges and empty consumables dim, and an item stack shows its last unit. In the skill editor, replacing a spell or item reopens its list on the page containing the current binding. **Applied** confirms an edit has reached your character profile in memory. **Done** requests one interface reload to write it to disk. Leaving the app also closes the skill editor and requests that save. Combat can postpone the write. WoW must get time to complete the reload or log out normally.
+
+The **30 FPS limit / restore** command in **More controls** limits foreground rendering. Tap it again to restore the previous game setting. A lower active limit is respected.
+
 ## Skill arc sets
 
 Open **More controls → Edit skills → Add set**. Each set has its own left and right arc for spells and usable items. Tap **+** on an arc to add a slot and use **‹** and **›** to edit the other sets. With two or more sets, the **Set 1 / 2** button at the bottom of the HUD cycles through them during play. Your existing arc layout becomes **Set 1**. Sets are saved per character.

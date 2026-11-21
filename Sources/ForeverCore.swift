@@ -75,10 +75,10 @@ enum ForeverControl: String, CaseIterable, Identifiable {
 
 enum ForeverShortcut: Identifiable {
     case chat, bags, map, character, talents, quests, spellbook
-    case professions, friends, guild, groupFinder, collections
+    case professions, friends, guild, groupFinder, collections, frameLimit
 
-    static let toolbar: [Self] = [.chat, .bags, .map, .character, .talents, .quests, .spellbook]
-    static let morePanels: [Self] = [.professions, .friends, .guild, .groupFinder, .collections]
+    static let toolbar: [Self] = [.chat, .character, .bags, .map, .professions, .talents, .quests, .spellbook]
+    static let social: [Self] = [.friends, .guild, .groupFinder]
     var id: Self { self }
 
     func label(_ language: ForeverLanguage) -> String {
@@ -95,6 +95,7 @@ enum ForeverShortcut: Identifiable {
         case .guild: language.text("Guild", "Gilde")
         case .groupFinder: language.text("Group Finder", "Gruppensuche")
         case .collections: language.text("Collections", "Sammlung")
+        case .frameLimit: language.text("30 FPS limit / restore", "30-FPS-Limit ein/aus")
         }
     }
 
@@ -113,6 +114,7 @@ enum ForeverShortcut: Identifiable {
         case .guild: 0x21
         case .groupFinder: 0x22
         case .collections: 0x2e
+        case .frameLimit: 0x46
         }
     }
 }

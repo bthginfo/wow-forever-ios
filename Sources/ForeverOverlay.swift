@@ -20,9 +20,7 @@ struct ForeverOverlay: View {
     @State private var cameraDelta = CGSize.zero
     @State private var cameraHeld = false
 
-    private var positions: [String: CGPoint] {
-        (try? JSONDecoder().decode([String: CGPoint].self, from: savedPositions)) ?? [:]
-    }
+    @State private var positions: [String: CGPoint] = [:]
 
     var body: some View {
         GeometryReader { geometry in
@@ -49,7 +47,14 @@ struct ForeverOverlay: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .onChange(of: size) { _, _ in releaseAll() }
         }
+        .onChange(of: savedPositions, initial: true) { _, data in
+            positions = (try? JSONDecoder().decode([String: CGPoint].self, from: data)) ?? [:]
+        }
         .onChange(of: phase) { _, state in
+            if state == .background && editMode == .skills {
+                tap(ForeverKeys.saveSkills, modified: true)
+                editMode = nil
+            }
             if state != .active { releaseAll() }
         }
         .onDisappear {
@@ -155,7 +160,16 @@ struct ForeverOverlay: View {
                                     tap(action.key, modified: true)
                                     if action == .chat { input(.textInput) }
                                 }
+                                .frame(minHeight: 44)
                                 .accessibilityIdentifier("forever.shortcut.\(action)")
+                                if action == .character {
+                                    Menu(language.text("Social", "Kontakte")) {
+                                        ForEach(ForeverShortcut.social) { shortcut in
+                                            Button(shortcut.label(language)) { tap(shortcut.key, modified: true) }
+                                        }
+                                    }
+                                    .accessibilityIdentifier("forever.social")
+                                }
                             }
                         }
                         .padding(.horizontal, 10)
@@ -188,7 +202,7 @@ struct ForeverOverlay: View {
                 tap(ForeverKeys.editSkills, modified: true)
                 editMode = .skills
             }
-            ForEach(ForeverShortcut.morePanels) { action in
+            ForEach([ForeverShortcut.collections, .frameLimit]) { action in
                 Button(action.label(language)) { tap(action.key, modified: true) }
                     .accessibilityIdentifier("forever.shortcut.\(action)")
             }
