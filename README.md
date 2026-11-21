@@ -10,7 +10,7 @@ The project brings the Android launcher's gold-and-navy interface, German and En
 | --- | --- |
 | Launcher | Status panel, Battle.net region, 720p/900p/1080p render presets and English/German interface |
 | Touch controls | Movement stick, right-drag camera, Jump, Target and Interact, with a compact phone layout and tablet layout |
-| In-game toolbar | Chat, Bags, Map, Character, Talents, Quests, Spellbook, and shortcuts for Professions, Friends, Guild, Group Finder and Collections under More controls |
+| In-game toolbar | Chat, Character, Social, Bags, Map, Professions, Talents, Quests and Spellbook. Social contains Friends, Guild and Group Finder. Collections is under More controls. |
 | Editing | Move and save touch-control positions. The Forever Touch add-on lets each character save and switch between sets of left and right skill arcs. |
 | Runtime | Playport supplies the download, update check, Windows guest and input. The Android browser-first Battle.net handoff is pending. |
 
