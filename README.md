@@ -67,7 +67,7 @@ Spell and item icons show a circular cooldown sweep and the remaining time. Brie
 
 Use **Edit skills → + → Professions** to bind learned actions such as Smelting or Fishing. Arc edits apply as soon as you make them. Tap **Done** to leave the editor and write the changes with one short interface reload. **Arc layout saved** appears after the layout is read back. During combat the reload waits until combat ends. **Discard** restores the layout you started editing.
 
-Move and save the chat frame in WoW’s **Edit Mode**. Chat temporarily moves above the mobile keyboard while typing and returns to the saved position afterward.
+Chat sits in the upper-left corner and widens while you type. Move the chat frame in WoW’s **Edit Mode** and save the layout if you want a different position.
 
 ## Tests
 
