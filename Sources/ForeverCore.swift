@@ -83,7 +83,7 @@ enum ForeverShortcut: Identifiable {
 
     func label(_ language: ForeverLanguage) -> String {
         switch self {
-        case .chat: "Chat"
+        case .chat: language.text("Write", "Schreiben")
         case .bags: language.text("Bags", "Taschen")
         case .map: language.text("Map", "Karte")
         case .character: language.text("Character", "Charakter")
