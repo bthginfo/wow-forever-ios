@@ -65,6 +65,8 @@ Open **More controls → Edit skills → Add set**. Each set has its own left an
 
 Spell and item icons show a circular cooldown sweep and the remaining time. Brief cooldowns under two seconds show the sweep alone. Spells with charges show the time until the next charge while recharging.
 
+Forever Touch checks the spellbook when you log in and when you learn spells. It upgrades existing arc slots in every set to the highest learned rank of that spell. An upgrade during combat takes effect after combat.
+
 Use **Edit skills → + → Professions** to bind learned actions such as Smelting or Fishing. Arc edits apply as soon as you make them. Tap **Done** to leave the editor and write the changes with one short interface reload. **Arc layout saved** appears after the layout is read back. During combat the reload waits until combat ends. **Discard** restores the layout you started editing.
 
 The **Chat** button sits directly to the left of the minimap. Tap it to show or hide the chat. A red dot on the collapsed button signals an incoming whisper. Open the chat to clear it. Use **Write** in the toolbar to bring up the keyboard.
