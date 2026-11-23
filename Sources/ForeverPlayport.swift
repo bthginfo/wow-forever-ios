@@ -48,7 +48,9 @@ enum ForeverRuntime {
             throw ForeverError("The add-on folder is outside the game installation.")
         }
         let source = Bundle.main.bundleURL.appendingPathComponent("ForeverTouch", isDirectory: true)
-        let files = ["ForeverTouchActions.lua", "ForeverTouchPicker.lua", "ForeverTouchMobileLayout.lua"]
+        let files = [
+            "ForeverTouchActions.lua", "ForeverTouchPicker.lua", "ForeverTouchChat.lua", "ForeverTouchMobileLayout.lua",
+        ]
         var assets = try files.map { name in
             (name, try Data(contentsOf: source.appendingPathComponent(name)))
         }
