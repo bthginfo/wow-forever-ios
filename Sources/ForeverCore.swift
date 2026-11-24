@@ -217,32 +217,53 @@ enum ForeverKeys {
 }
 
 func checkpointForeverTouchProfiles(in gameRoot: URL) throws {
-    let wtf = gameRoot.appendingPathComponent("_forever_/WTF", isDirectory: true)
+    let flavor = gameRoot.appendingPathComponent("_forever_", isDirectory: true)
+    let wtf = flavor.appendingPathComponent("WTF", isDirectory: true)
     let accounts = wtf.appendingPathComponent("Account", isDirectory: true)
     let checkpoints = wtf.appendingPathComponent(".forever-touch", isDirectory: true)
     let fileManager = FileManager.default
 
+    // Foundation may spell the same macOS path differently before and after a file exists.
+    // Check each component below the selected game folder without following symbolic links.
+    func hasTypeOrIsMissing(_ url: URL, _ type: FileAttributeType) -> Bool {
+        do {
+            let attributes = try fileManager.attributesOfItem(atPath: url.path)
+            return attributes[.type] as? FileAttributeType == type
+        } catch let error as CocoaError {
+            return error.code == .fileNoSuchFile || error.code == .fileReadNoSuchFile
+        } catch {
+            return false
+        }
+    }
+
+    guard [flavor, wtf, accounts, checkpoints].allSatisfy({ hasTypeOrIsMissing($0, .typeDirectory) }) else { return }
+
     func paths(in directory: URL) -> Set<String> {
-        let properties: [URLResourceKey] = [.isSymbolicLinkKey, .isRegularFileKey]
-        guard let tree = fileManager.enumerator(at: directory, includingPropertiesForKeys: properties) else { return [] }
+        guard let tree = fileManager.enumerator(atPath: directory.path) else { return [] }
         var paths = Set<String>()
-        for case let url as URL in tree {
-            let parts = url.pathComponents.dropFirst(directory.pathComponents.count)
+        for case let path as String in tree {
             if tree.level >= 5 { tree.skipDescendants() }
-            let info = try? url.resourceValues(forKeys: Set(properties))
-            if info?.isSymbolicLink == true {
-                tree.skipDescendants()
-                continue
-            }
-            guard parts.count == 3 || parts.count == 5, url.deletingLastPathComponent().lastPathComponent == "SavedVariables",
-                  info?.isRegularFile == true else { continue }
-            if url.lastPathComponent == "ForeverTouch.lua" {
-                paths.insert(parts.joined(separator: "/"))
-            } else if url.lastPathComponent == "ForeverTouch.lua.bak" {
-                paths.insert(String(parts.joined(separator: "/").dropLast(4)))
+            let parts = path.split(separator: "/")
+            guard parts.count == 3 || parts.count == 5, parts.dropLast().last == "SavedVariables" else { continue }
+            if parts.last == "ForeverTouch.lua" {
+                paths.insert(path)
+            } else if parts.last == "ForeverTouch.lua.bak" {
+                paths.insert(String(path.dropLast(4)))
             }
         }
         return paths
+    }
+
+    func profileFile(at path: String, in directory: URL) -> URL? {
+        let parts = path.split(separator: "/")
+        guard let filename = parts.last else { return nil }
+        var parent = directory
+        for part in parts.dropLast() {
+            parent.appendPathComponent(String(part), isDirectory: true)
+            guard hasTypeOrIsMissing(parent, .typeDirectory) else { return nil }
+        }
+        let file = parent.appendingPathComponent(String(filename))
+        return hasTypeOrIsMissing(file, .typeRegular) ? file : nil
     }
 
     func readProfile(_ url: URL) -> Data? {
@@ -266,17 +287,15 @@ func checkpointForeverTouchProfiles(in gameRoot: URL) throws {
     }
 
     for path in paths(in: accounts).union(paths(in: checkpoints)) {
-        let current = accounts.appendingPathComponent(path)
-        let saved = checkpoints.appendingPathComponent(path)
-        let backup = current.appendingPathExtension("bak")
-        guard current.resolvingSymlinksInPath().path.hasPrefix(accounts.path + "/"),
-              backup.resolvingSymlinksInPath().path.hasPrefix(accounts.path + "/"),
-              saved.resolvingSymlinksInPath().path.hasPrefix(checkpoints.path + "/") else { continue }
+        guard let current = profileFile(at: path, in: accounts),
+              let saved = profileFile(at: path, in: checkpoints) else { continue }
         let data: Data?
         if let size = try? current.resourceValues(forKeys: [.fileSizeKey]).fileSize, size > 0 {
             data = readProfile(current)
         } else {
-            data = [backup, saved].sorted { modified($0) > modified($1) }.lazy.compactMap(readProfile).first
+            let backup = current.appendingPathExtension("bak")
+            let copies = hasTypeOrIsMissing(backup, .typeRegular) ? [backup, saved] : [saved]
+            data = copies.sorted { modified($0) > modified($1) }.lazy.compactMap(readProfile).first
             if let data { try write(data, to: current) }
         }
         if let data, readProfile(saved) != data { try write(data, to: saved) }

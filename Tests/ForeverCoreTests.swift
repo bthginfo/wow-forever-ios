@@ -45,20 +45,39 @@ enum ForeverCoreTests {
         assert(ForeverShortcut.toolbar.contains(.professions))
         assert(ForeverShortcut.frameLimit.key == 0x46)
         try checkProfileRecovery()
-        print("Region, render size, layouts, saved positions, movement and add-on shortcuts passed.")
+        print("Region, render size, layouts, saved positions, movement, add-on shortcuts and profile recovery passed.")
     }
 
     private static func checkProfileRecovery() throws {
-        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-        let current = root.appendingPathComponent("_forever_/WTF/Account/Account1/Realm/Player/SavedVariables/ForeverTouch.lua")
-        defer { try? FileManager.default.removeItem(at: root) }
-        try FileManager.default.createDirectory(at: current.deletingLastPathComponent(), withIntermediateDirectories: true)
+        let files = FileManager.default
+        let sandbox = files.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let game = sandbox.appendingPathComponent("WoW", isDirectory: true)
+        let root = sandbox.appendingPathComponent("Linked WoW", isDirectory: true)
+        let wtf = root.appendingPathComponent("_forever_/WTF", isDirectory: true)
+        let profilePath = "Account1/Realm/Player/SavedVariables/ForeverTouch.lua"
+        let current = wtf.appendingPathComponent("Account/\(profilePath)")
+        let saved = wtf.appendingPathComponent(".forever-touch/\(profilePath)")
+        defer { try? files.removeItem(at: sandbox) }
+        try files.createDirectory(at: game, withIntermediateDirectories: true)
+        try files.createSymbolicLink(at: root, withDestinationURL: game)
+        try files.createDirectory(at: current.deletingLastPathComponent(), withIntermediateDirectories: true)
         let layout = Data("ForeverTouchPreferences = { revision = 8, mobileSlots = { left = {} } }\n".utf8)
         try layout.write(to: current)
         try checkpointForeverTouchProfiles(in: root)
-        try FileManager.default.removeItem(at: current)
+        let checkpoint = try Data(contentsOf: saved)
+        assert(checkpoint == layout, "The checkpoint must exist before the original profile is lost")
+
+        try files.removeItem(at: current)
         try checkpointForeverTouchProfiles(in: root)
         let restored = try Data(contentsOf: current)
         assert(restored == layout, "Recovery must use the persisted profile from the same WoW folder")
+
+        let outside = sandbox.appendingPathComponent("Outside.lua")
+        try layout.write(to: outside)
+        try files.removeItem(at: current)
+        try files.createSymbolicLink(at: current, withDestinationURL: outside)
+        try checkpointForeverTouchProfiles(in: root)
+        let attributes = try files.attributesOfItem(atPath: current.path)
+        assert(attributes[.type] as? FileAttributeType == .typeSymbolicLink, "Recovery must skip linked profile files")
     }
 }
