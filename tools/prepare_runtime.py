@@ -168,10 +168,27 @@ def port_changes(checkout: Path) -> dict[str, tuple[bytes | None, bytes]]:
 
     private static func log(_ line: String) { HostIO.log("textbar: " + line) }""",
         ),
-        ("        guard isOpen else { return }\n        isOpen = false",
-         "        guard isOpen else { return }\n        if isWritingChat { finishChat(cancel: true); return }\n        isOpen = false"),
-        ("    func change(to text: String) { send(bar.change(to: text)) }",
-         "    func change(to text: String) {\n        guard !finishingChat else { return }\n        send(bar.change(to: text))\n    }"),
+        (
+            "        guard isOpen else { return }\n        isOpen = false",
+            """        guard isOpen else { return }
+        if isWritingChat {
+            finishChat(cancel: true)
+            return
+        }
+        isOpen = false""",
+        ),
+        (
+            "    func change(to text: String) { send(bar.change(to: text)) }",
+            r"""    func change(to text: String) {
+        guard !finishingChat else { return }
+        let draft = isWritingChat
+            ? text.replacingOccurrences(of: "\r\n", with: " ")
+                .replacingOccurrences(of: "\n", with: " ")
+                .replacingOccurrences(of: "\r", with: " ")
+            : text
+        send(bar.change(to: draft))
+    }""",
+        ),
         ("    func press(_ key: TextBar.Key) {\n        send(bar.press(key))",
          "    func press(_ key: TextBar.Key) {\n        guard !finishingChat else { return }\n"
          "        send(bar.press(key))\n        if case .enter = key, isWritingChat { finishChat(cancel: false) }"),
