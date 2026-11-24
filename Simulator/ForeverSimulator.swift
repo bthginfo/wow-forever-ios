@@ -6,6 +6,7 @@ struct ForeverSimulator: App {
     @AppStorage("forever.fullscreen") private var fullscreen = true
     @State private var playing = ProcessInfo.processInfo.arguments.contains("--hud")
     @State private var textBar = false
+    @State private var chatFullscreen = false
     @State private var status: String?
 
     var body: some Scene {
@@ -21,7 +22,7 @@ struct ForeverSimulator: App {
                     }
                     .foregroundStyle(ForeverPalette.muted)
                     .allowsHitTesting(false)
-                    ForeverOverlay(input: handle)
+                    ForeverOverlay(chatFullscreen: $chatFullscreen, input: handle)
                 }
                 .statusBarHidden(fullscreen)
                 .persistentSystemOverlays(fullscreen ? .hidden : .automatic)
@@ -47,7 +48,7 @@ struct ForeverSimulator: App {
     private func handle(_ input: ForeverInput) {
         switch input {
         case .gameMenu: playing = false
-        case .textInput: textBar = true
+        case .textInput, .chatInput: textBar = true
         default: break
         }
     }

@@ -139,14 +139,83 @@ def port_changes(checkout: Path) -> dict[str, tuple[bytes | None, bytes]]:
          "    func sendForeverInput(_ output: MixerOutput) { send(output) }\n\n    private func send(_ o: MixerOutput) {"),
     )
     edit(
+        "app/Sources/S1Probe/UI/TextBarView.swift",
+        (
+            "    private static func log(_ line: String) { HostIO.log(\"textbar: \" + line) }",
+            """    private var chatPriorSecure: Bool?
+    private var finishingChat = false
+    var isWritingChat: Bool { chatPriorSecure != nil }
+
+    func openForChat() {
+        guard TitleLaunch.shared.running, !isOpen else { return }
+        chatPriorSecure = bar.secure
+        bar = TextBar(secure: false)
+        isOpen = true
+    }
+
+    private func finishChat(cancel: Bool) {
+        guard let priorSecure = chatPriorSecure, !finishingChat else { return }
+        if cancel && TitleLaunch.shared.running { send([.key(0x1B)]) }
+        finishingChat = true
+        Task {
+            if TitleLaunch.shared.running { _ = await delivered() }
+            bar = TextBar(secure: priorSecure)
+            isOpen = false
+            chatPriorSecure = nil
+            finishingChat = false
+        }
+    }
+
+    private static func log(_ line: String) { HostIO.log("textbar: " + line) }""",
+        ),
+        (
+            "        guard isOpen else { return }\n        isOpen = false",
+            """        guard isOpen else { return }
+        if isWritingChat {
+            finishChat(cancel: true)
+            return
+        }
+        isOpen = false""",
+        ),
+        (
+            "    func change(to text: String) { send(bar.change(to: text)) }",
+            r"""    func change(to text: String) {
+        guard !finishingChat else { return }
+        let draft = isWritingChat
+            ? text.replacingOccurrences(of: "\r\n", with: " ")
+                .replacingOccurrences(of: "\n", with: " ")
+                .replacingOccurrences(of: "\r", with: " ")
+            : text
+        send(bar.change(to: draft))
+    }""",
+        ),
+        ("    func press(_ key: TextBar.Key) {\n        send(bar.press(key))",
+         "    func press(_ key: TextBar.Key) {\n        guard !finishingChat else { return }\n"
+         "        send(bar.press(key))\n        if case .enter = key, isWritingChat { finishChat(cancel: false) }"),
+        (
+            """                button(model.bar.secure ? "lock.fill" : "lock.open", label: model.bar.secure ? "Password mode on" : "Password mode off",
+                       lit: model.bar.secure) { model.setSecure(!model.bar.secure) }""",
+            """                if !model.isWritingChat {
+                    button(model.bar.secure ? "lock.fill" : "lock.open", label: model.bar.secure ? "Password mode on" : "Password mode off",
+                           lit: model.bar.secure) { model.setSecure(!model.bar.secure) }
+                }""",
+        ),
+        ('                text("Tab") { model.press(.tab) }\n                text("Enter") { model.press(.enter) }',
+         '                if !model.isWritingChat { text("Tab") { model.press(.tab) } }\n'
+         '                text(model.isWritingChat ? "Send" : "Enter") { model.press(.enter) }'),
+        ("        f.textContentType = .username", "        f.textContentType = model.isWritingChat ? nil : .username"),
+    )
+    edit(
         "app/Sources/S1Probe/PlayportApp.swift",
-        ("    @State private var pageGone = false", '    @State private var pageGone = false\n    @AppStorage("forever.fullscreen") private var foreverFullscreen = true'),
+        ("    @State private var pageGone = false",
+         '    @State private var pageGone = false\n    @State private var chatFullscreen = false\n'
+         '    @AppStorage("forever.fullscreen") private var foreverFullscreen = true'),
         (
             "                    // The text bar over the running game",
             """                    .overlay {
                         if launch.titleID == ForeverRuntime.titleID && !launch.showsSheet &&
                             !textBar.isOpen && !menu.isOpen && !menu.quitting && !web.isUp {
-                            ForeverOverlay(input: ForeverRuntime.deliver)
+                            ForeverOverlay(chatFullscreen: $chatFullscreen, input: ForeverRuntime.deliver)
                         }
                     }
                     // The text bar over the running game""",
@@ -157,6 +226,8 @@ def port_changes(checkout: Path) -> dict[str, tuple[bytes | None, bytes]]:
                     .persistentSystemOverlays(launch.titleID != ForeverRuntime.titleID || foreverFullscreen ? .hidden : .automatic)
                     // A swipe""",
         ),
+        ("            pageGone = false\n            guard running else { return }",
+         "            pageGone = false\n            chatFullscreen = false\n            guard running else { return }"),
     )
     edit("app/Info.plist", ("<string>Playport</string>", "<string>WoW Forever iOS</string>"))
     edit("app/xtool.yml", ("\nresources:\n", "\nresources:\n  - ForeverTouch\n"))

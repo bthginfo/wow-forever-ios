@@ -83,7 +83,7 @@ enum ForeverShortcut: Identifiable {
 
     func label(_ language: ForeverLanguage) -> String {
         switch self {
-        case .chat: language.text("Write", "Schreiben")
+        case .chat: language.text("Message…", "Nachricht…")
         case .bags: language.text("Bags", "Taschen")
         case .map: language.text("Map", "Karte")
         case .character: language.text("Character", "Charakter")
@@ -124,6 +124,7 @@ enum ForeverInput: Equatable {
     case cameraButton(Bool)
     case cameraMotion(dx: Double, dy: Double)
     case textInput
+    case chatInput
     case gameMenu
     case diagnostics
 }
@@ -190,6 +191,8 @@ enum ForeverKeys {
     static let saveSkills: UInt8 = 0x70
     static let cancelSkills: UInt8 = 0x71
     static let resetSkills: UInt8 = 0x24
+    static let openChatFullscreen: UInt8 = 0x4D
+    static let closeChatFullscreen: UInt8 = 0x43
 
     static func press(_ key: UInt8, modified: Bool = false) -> [ForeverInput] {
         let tap: [ForeverInput] = [.key(key, down: true), .key(key, down: false)]

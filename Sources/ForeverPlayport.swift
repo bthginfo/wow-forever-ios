@@ -26,6 +26,8 @@ enum ForeverRuntime {
             }
         case .textInput:
             GameTextBar.shared.open()
+        case .chatInput:
+            GameTextBar.shared.openForChat()
         case .gameMenu:
             _ = InGameMenu.shared.open()
         case .diagnostics:
@@ -49,14 +51,15 @@ enum ForeverRuntime {
         }
         let source = Bundle.main.bundleURL.appendingPathComponent("ForeverTouch", isDirectory: true)
         let files = [
-            "ForeverTouchActions.lua", "ForeverTouchPicker.lua", "ForeverTouchChat.lua", "ForeverTouchMobileLayout.lua",
+            "ForeverTouchActions.lua", "ForeverTouchPicker.lua", "ForeverTouchChatHistory.lua",
+            "ForeverTouchChat.lua", "ForeverTouchMobileLayout.lua",
         ]
         var assets = try files.map { name in
             (name, try Data(contentsOf: source.appendingPathComponent(name)))
         }
         let toc = try String(contentsOf: source.appendingPathComponent("ForeverTouch.toc"), encoding: .utf8)
         let language = UserDefaults.standard.string(forKey: "forever.language") == "de" ? "de" : "en"
-        let manifest = Data(("## X-ForeverTouch-Language: \(language)\n" + toc).utf8)
+        let manifest = Data(("## X-ForeverTouch-Language: \(language)\n## X-ForeverTouch-Keyboard: native\n" + toc).utf8)
         assets += [("ForeverTouch.toc", manifest), ("ForeverTouch_Camelot.toc", manifest)]
         try FileManager.default.createDirectory(at: directories, withIntermediateDirectories: true)
         for (name, data) in assets {
