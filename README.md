@@ -53,7 +53,7 @@ Once setup is ready, choose your region, tap **Download and install**, and leave
 
 ## Mobile HUD in this source build
 
-**Write** opens the keyboard for game chat. **Latest** jumps to the most recent line. **Character** and **Professions** have direct toolbar buttons. **Social** opens Friends, Guild and Group Finder. Swipe the toolbar horizontally on narrow screens.
+**Character** and **Professions** have direct toolbar buttons. **Social** opens Friends, Guild and Group Finder. Swipe the toolbar horizontally on narrow screens.
 
 When a charge is still available, the recharge sweep stays light. Spent charges and empty consumables dim, and an item stack shows its last unit. In the skill editor, replacing a spell or item reopens its list on the page containing the current binding. **Applied** confirms an edit has reached your character profile in memory. **Done** requests one interface reload to write it to disk. Leaving the app also closes the skill editor and requests that save. Combat can postpone the write. WoW must get time to complete the reload or log out normally.
 
@@ -69,7 +69,9 @@ Forever Touch checks the spellbook when you log in and when you learn spells. It
 
 Use **Edit skills → + → Professions** to bind learned actions such as Smelting or Fishing. Arc edits apply as soon as you make them. Tap **Done** to leave the editor and write the changes with one short interface reload. **Arc layout saved** appears after the layout is read back. During combat the reload waits until combat ends. **Discard** restores the layout you started editing.
 
-The **Chat** button sits directly to the left of the minimap. Tap it to show or hide the chat. A red dot on the collapsed button signals an incoming whisper. Open the chat to clear it. Use **Write** in the toolbar to bring up the keyboard.
+Tap **Chat** beside the minimap to show or hide the translucent window. Drag the lower-left corner to resize it, or tap that corner to step through three sizes. The size is saved per character.
+
+**Message…** in the mobile toolbar opens the iOS keyboard. The expand button beside it opens the full chat with filters for all messages, whispers, party, raid and guild. Select a whisper contact to open their conversation and reply there. The red dot signals an unread whisper. The new view shows messages from the current session.
 
 ## Tests
 
