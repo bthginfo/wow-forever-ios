@@ -49,10 +49,11 @@ enum ForeverRuntime {
         guard directories.resolvingSymlinksInPath().standardizedFileURL.path.hasPrefix(root.path + "/") else {
             throw ForeverError("The add-on folder is outside the game installation.")
         }
+        try? checkpointForeverTouchProfiles(in: root)
         let source = Bundle.main.bundleURL.appendingPathComponent("ForeverTouch", isDirectory: true)
         let files = [
             "ForeverTouchActions.lua", "ForeverTouchPicker.lua", "ForeverTouchChatHistory.lua",
-            "ForeverTouchChat.lua", "ForeverTouchMobileLayout.lua",
+            "ForeverTouchChat.lua", "ForeverTouchMobileLayout.lua", "ChatCorner.tga",
         ]
         var assets = try files.map { name in
             (name, try Data(contentsOf: source.appendingPathComponent(name)))
@@ -69,6 +70,8 @@ enum ForeverRuntime {
             }
         }
     }
+
+
 }
 
 struct ForeverError: LocalizedError {

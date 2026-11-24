@@ -77,7 +77,7 @@ enum ForeverShortcut: Identifiable {
     case chat, bags, map, character, talents, quests, spellbook
     case professions, friends, guild, groupFinder, collections, frameLimit
 
-    static let toolbar: [Self] = [.chat, .character, .bags, .map, .professions, .talents, .quests, .spellbook]
+    static let toolbar: [Self] = [.character, .bags, .map, .professions, .talents, .quests, .spellbook]
     static let social: [Self] = [.friends, .guild, .groupFinder]
     var id: Self { self }
 
@@ -213,5 +213,72 @@ enum ForeverKeys {
         if abs(x) > abs(y) * (held.contains(xKey) ? 0.39 : 0.58) { keys.insert(xKey) }
         if abs(y) > abs(x) * (held.contains(yKey) ? 0.39 : 0.58) { keys.insert(yKey) }
         return keys
+    }
+}
+
+func checkpointForeverTouchProfiles(in gameRoot: URL) throws {
+    let wtf = gameRoot.appendingPathComponent("_forever_/WTF", isDirectory: true)
+    let accounts = wtf.appendingPathComponent("Account", isDirectory: true)
+    let checkpoints = wtf.appendingPathComponent(".forever-touch", isDirectory: true)
+    let fileManager = FileManager.default
+
+    func paths(in directory: URL) -> Set<String> {
+        let properties: [URLResourceKey] = [.isSymbolicLinkKey, .isRegularFileKey]
+        guard let tree = fileManager.enumerator(at: directory, includingPropertiesForKeys: properties) else { return [] }
+        var paths = Set<String>()
+        for case let url as URL in tree {
+            let parts = url.pathComponents.dropFirst(directory.pathComponents.count)
+            if tree.level >= 5 { tree.skipDescendants() }
+            let info = try? url.resourceValues(forKeys: Set(properties))
+            if info?.isSymbolicLink == true {
+                tree.skipDescendants()
+                continue
+            }
+            guard parts.count == 3 || parts.count == 5, url.deletingLastPathComponent().lastPathComponent == "SavedVariables",
+                  info?.isRegularFile == true else { continue }
+            if url.lastPathComponent == "ForeverTouch.lua" {
+                paths.insert(parts.joined(separator: "/"))
+            } else if url.lastPathComponent == "ForeverTouch.lua.bak" {
+                paths.insert(String(parts.joined(separator: "/").dropLast(4)))
+            }
+        }
+        return paths
+    }
+
+    func readProfile(_ url: URL) -> Data? {
+        guard let bytes = try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize,
+              bytes > 0 && bytes <= 8 * 1024 * 1024,
+              let data = try? Data(contentsOf: url),
+              let body = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines.union(CharacterSet(charactersIn: "\u{FEFF}"))),
+              body.hasSuffix("}"),
+              body.hasPrefix("ForeverTouchProfiles = {") || body.hasPrefix("ForeverTouchPreferences = {")
+        else { return nil }
+        return data
+    }
+
+    func write(_ value: Data, to url: URL) throws {
+        try fileManager.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try value.write(to: url, options: .atomic)
+    }
+
+    func modified(_ url: URL) -> Date {
+        (try? url.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast
+    }
+
+    for path in paths(in: accounts).union(paths(in: checkpoints)) {
+        let current = accounts.appendingPathComponent(path)
+        let saved = checkpoints.appendingPathComponent(path)
+        let backup = current.appendingPathExtension("bak")
+        guard current.resolvingSymlinksInPath().path.hasPrefix(accounts.path + "/"),
+              backup.resolvingSymlinksInPath().path.hasPrefix(accounts.path + "/"),
+              saved.resolvingSymlinksInPath().path.hasPrefix(checkpoints.path + "/") else { continue }
+        let data: Data?
+        if let size = try? current.resourceValues(forKeys: [.fileSizeKey]).fileSize, size > 0 {
+            data = readProfile(current)
+        } else {
+            data = [backup, saved].sorted { modified($0) > modified($1) }.lazy.compactMap(readProfile).first
+            if let data { try write(data, to: current) }
+        }
+        if let data, readProfile(saved) != data { try write(data, to: saved) }
     }
 }

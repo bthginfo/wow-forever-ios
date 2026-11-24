@@ -10,7 +10,7 @@ The project brings the Android launcher's gold-and-navy interface, German and En
 | --- | --- |
 | Launcher | Status panel, Battle.net region, 720p/900p/1080p render presets and English/German interface |
 | Touch controls | Movement stick, right-drag camera, Jump, Target and Interact, with a compact phone layout and tablet layout |
-| In-game toolbar | Chat, Character, Social, Bags, Map, Professions, Talents, Quests and Spellbook. Social contains Friends, Guild and Group Finder. Collections is under More controls. |
+| In-game toolbar | Character, Social, Bags, Map, Professions, Talents, Quests and Spellbook. Social contains Friends, Guild and Group Finder. Collections is under More controls. |
 | Editing | Move and save touch-control positions. The Forever Touch add-on lets each character save and switch between sets of left and right skill arcs. |
 | Runtime | Playport supplies the download, update check, Windows guest and input. The Android browser-first Battle.net handoff is pending. |
 
@@ -69,9 +69,11 @@ Forever Touch checks the spellbook when you log in and when you learn spells. It
 
 Use **Edit skills → + → Professions** to bind learned actions such as Smelting or Fishing. Arc edits apply as soon as you make them. Tap **Done** to leave the editor and write the changes with one short interface reload. **Arc layout saved** appears after the layout is read back. During combat the reload waits until combat ends. **Discard** restores the layout you started editing.
 
-Tap **Chat** beside the minimap to show or hide the translucent window. Drag the lower-left corner to resize it, or tap that corner to step through three sizes. The size is saved per character.
+Tap **Chat** beside the minimap to show or hide the transparent window. Drag the lower-left handle or tap it to cycle through three sizes. WoW saves the size per character.
 
-**Message…** in the mobile toolbar opens the iOS keyboard. The expand button beside it opens the full chat with filters for all messages, whispers, party, raid and guild. Select a whisper contact to open their conversation and reply there. The red dot signals an unread whisper. The new view shows messages from the current session.
+The small pencil opens the keyboard. The expand button beside it opens full chat with group, raid and guild filters, separate whisper conversations, and a **Friends** tab. A red dot signals an unread whisper. Chat history covers the current session.
+
+Arc edits use the game's saved variables. At launch the app keeps a copy of saved Forever Touch profiles in `_forever_/WTF/.forever-touch` and recovers missing or empty profile files when a copy is available. Wait for **Arc layout saved** or log out of WoW normally before closing the app.
 
 ## Tests
 

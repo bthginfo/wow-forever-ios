@@ -28,23 +28,7 @@ struct ForeverOverlay: View {
             let size = geometry.size
             let layout = ForeverLayout(size: size, positions: editMode == .controls ? draft : positions)
             ZStack {
-                if chatFullscreen {
-                    VStack {
-                        HStack(spacing: 12) {
-                            Button(language.text("Back to game", "Zurück zum Spiel")) {
-                                setChatFullscreen(false)
-                            }
-                            composer
-                        }
-                        .padding(.horizontal, 12)
-                        .frame(height: 48)
-                        .background(ForeverPalette.overlay, in: RoundedRectangle(cornerRadius: 15))
-                        .padding(.top, 5)
-                        Spacer().allowsHitTesting(false)
-                    }
-                    .font(.system(size: 13, weight: .medium))
-                    .buttonStyle(.plain)
-                } else if editMode != .skills {
+                if !chatFullscreen && editMode != .skills {
                     ForEach(ForeverControl.allCases) { control in
                         if let rect = layout.bounds[control], rect.width > 0, rect.height > 0 {
                             controlView(control, rect: rect, size: size)
@@ -54,6 +38,7 @@ struct ForeverOverlay: View {
                     }
                     toolbarAt(size: size)
                 }
+                if editMode == nil { chatControlsAt(size: size) }
                 if let editMode {
                     VStack {
                         Spacer()
@@ -155,7 +140,7 @@ struct ForeverOverlay: View {
     @ViewBuilder
     private func toolbarAt(size: CGSize) -> some View {
         let compact = toolbarMinimized && editMode == nil
-        let width = compact ? min(210, size.width - 12) : min(700, max(48, size.width - 12))
+        let width = compact ? 48 : min(700, max(48, size.width - 12))
         let defaultRect = CGRect(x: (size.width - width) / 2, y: 5, width: width, height: 48)
         let placement = editMode == .controls ? draft : positions
         let rect = placement[ForeverControl.toolbar.rawValue]
@@ -165,30 +150,20 @@ struct ForeverOverlay: View {
                 controlShape(.toolbar, rect: rect)
                     .gesture(positionGesture(.toolbar, rect: rect, size: size))
             } else if compact {
-                HStack(spacing: 4) {
-                    composer
-                    chatFullscreenButton
-                    iconButton("chevron.down", language.text("Show toolbar", "Menüleiste ausklappen")) {
-                        toolbarMinimized = false
-                    }
+                iconButton("chevron.down", language.text("Show toolbar", "Menüleiste ausklappen")) {
+                    toolbarMinimized = false
                 }
-                .font(.system(size: 13, weight: .medium))
             } else {
                 HStack(spacing: 0) {
                     ScrollView(.horizontal) {
                         HStack(spacing: 16) {
                             ForEach(ForeverShortcut.toolbar) { action in
-                                if action == .chat {
-                                    composer
-                                    chatFullscreenButton
-                                } else {
-                                    Button {
-                                        tap(action.key, modified: true)
-                                    } label: {
-                                        Text(action.label(language)).frame(minHeight: 44).contentShape(Rectangle())
-                                    }
-                                    .accessibilityIdentifier("forever.shortcut.\(action)")
+                                Button {
+                                    tap(action.key, modified: true)
+                                } label: {
+                                    Text(action.label(language)).frame(minHeight: 44).contentShape(Rectangle())
                                 }
+                                .accessibilityIdentifier("forever.shortcut.\(action)")
                                 if action == .character {
                                     Menu(language.text("Social", "Kontakte")) {
                                         ForEach(ForeverShortcut.social) { shortcut in
@@ -217,25 +192,40 @@ struct ForeverOverlay: View {
         .position(x: rect.midX, y: rect.midY)
     }
 
-    private var composer: some View {
-        Button {
-            releaseAll()
-            tap(ForeverShortcut.chat.key, modified: true)
-            input(.chatInput)
-        } label: {
-            Text(ForeverShortcut.chat.label(language))
-                .padding(.horizontal, 12)
-                .frame(minHeight: 42)
-                .background(ForeverPalette.text.opacity(0.10), in: RoundedRectangle(cornerRadius: 10))
+    private func chatControlsAt(size: CGSize) -> some View {
+        // The compact dock shares its anchor with ForeverTouchChat.lua.
+        let end = chatFullscreen ? size.width * 0.05 :
+            min(size.width * 0.28, size.height * 0.34) +
+            max(size.width * 0.045, size.height * 0.14) + size.height * 0.01
+        let buttonSize: CGFloat = chatFullscreen ? 44 : 35
+        let center = max(buttonSize / 2, size.height * (chatFullscreen ? 0.073 : 0.191))
+        return HStack(spacing: 0) {
+            chatButton("square.and.pencil", ForeverShortcut.chat.label(language), size: buttonSize) {
+                releaseAll()
+                tap(ForeverShortcut.chat.key, modified: true)
+                input(.chatInput)
+            }
+            .accessibilityIdentifier("forever.shortcut.chat")
+            chatButton(chatFullscreen ? "xmark" : "arrow.up.left.and.arrow.down.right",
+                       chatFullscreen ? language.text("Back to game", "Zurück zum Spiel") :
+                       language.text("Full chat", "Chat-Vollbild"), size: buttonSize) {
+                setChatFullscreen(!chatFullscreen)
+            }
+            .accessibilityIdentifier("forever.chat.fullscreen")
         }
-        .buttonStyle(.plain)
-        .accessibilityIdentifier("forever.shortcut.chat")
+        .background(Color(red: 0.08, green: 0.12, blue: 0.17).opacity(chatFullscreen ? 0.85 : 0.45), in: Capsule())
+        .position(x: max(buttonSize, size.width - end - buttonSize), y: center)
     }
 
-    private var chatFullscreenButton: some View {
-        iconButton("arrow.up.left.and.arrow.down.right", language.text("Full chat", "Chat-Vollbild")) {
-            setChatFullscreen(true)
+    private func chatButton(_ icon: String, _ title: String, size: CGFloat, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: icon)
+                .font(.system(size: 16, weight: .semibold))
+                .frame(width: size, height: size)
+                .contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
+        .accessibilityLabel(title)
     }
 
     private func setChatFullscreen(_ expanded: Bool) {

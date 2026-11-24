@@ -6,7 +6,7 @@ import CoreGraphics
 
 @main
 enum ForeverCoreTests {
-    static func main() {
+    static func main() throws {
         assert(ForeverRegion.suggested(for: "DE") == .eu)
         assert(ForeverRegion.suggested(for: "hk") == .tw)
         assert(ForeverRegion.suggested(for: nil) == .us)
@@ -44,6 +44,21 @@ enum ForeverCoreTests {
         assert(ForeverShortcut.social.map(\.key) == [0x23, 0x21, 0x22])
         assert(ForeverShortcut.toolbar.contains(.professions))
         assert(ForeverShortcut.frameLimit.key == 0x46)
+        try checkProfileRecovery()
         print("Region, render size, layouts, saved positions, movement and add-on shortcuts passed.")
+    }
+
+    private static func checkProfileRecovery() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let current = root.appendingPathComponent("_forever_/WTF/Account/Account1/Realm/Player/SavedVariables/ForeverTouch.lua")
+        defer { try? FileManager.default.removeItem(at: root) }
+        try FileManager.default.createDirectory(at: current.deletingLastPathComponent(), withIntermediateDirectories: true)
+        let layout = Data("ForeverTouchPreferences = { revision = 8, mobileSlots = { left = {} } }\n".utf8)
+        try layout.write(to: current)
+        try checkpointForeverTouchProfiles(in: root)
+        try FileManager.default.removeItem(at: current)
+        try checkpointForeverTouchProfiles(in: root)
+        let restored = try Data(contentsOf: current)
+        assert(restored == layout, "Recovery must use the persisted profile from the same WoW folder")
     }
 }
