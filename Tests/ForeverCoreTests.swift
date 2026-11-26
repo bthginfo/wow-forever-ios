@@ -30,6 +30,20 @@ enum ForeverCoreTests {
                 assert(!bounds.dropFirst(i + 1).contains { rect.intersects($0) })
             }
         }
+        for size in [phone, split] {
+            let layout = ForeverLayout(size: size)
+            assert(layout.bounds[.target]!.height >= ForeverLayout.minimumTouch)
+            assert(layout.bounds[.interact]!.height >= ForeverLayout.minimumTouch)
+        }
+        let zone = phoneLayout.stickZone(in: phone)
+        let stick = phoneLayout.bounds[.movement]!
+        assert(zone.contains(stick) && zone.minX == 0 && zone.maxY == phone.height)
+        assert(zone.maxX > stick.maxX + stick.width * 0.4)
+        // The left skill arc starts 23 % above the bottom edge.
+        assert(zone.minY > phone.height * 0.77)
+        for control in [ForeverControl.camera, .jump, .target, .interact] {
+            assert(!zone.intersects(phoneLayout.bounds[control]!))
+        }
         let move = ForeverLayout(size: phone, positions: [ForeverControl.camera.rawValue: .zero])
         assert(move.bounds[.camera]!.origin == .zero)
 
@@ -44,6 +58,6 @@ enum ForeverCoreTests {
         assert(ForeverShortcut.social.map(\.key) == [0x23, 0x21, 0x22])
         assert(ForeverShortcut.toolbar.contains(.professions))
         assert(ForeverShortcut.frameLimit.key == 0x46)
-        print("Region, render size, layouts, saved positions, movement and add-on shortcuts passed.")
+        print("Region, render size, layouts, touch sizes, stick zone, saved positions, movement and add-on shortcuts passed.")
     }
 }

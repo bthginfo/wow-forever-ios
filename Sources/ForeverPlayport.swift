@@ -50,10 +50,10 @@ enum ForeverRuntime {
             throw ForeverError("The add-on folder is outside the game installation.")
         }
         let source = Bundle.main.bundleURL.appendingPathComponent("ForeverTouch", isDirectory: true)
-        let files = [
-            "ForeverTouchActions.lua", "ForeverTouchPicker.lua", "ForeverTouchChatHistory.lua",
-            "ForeverTouchChat.lua", "ForeverTouchMobileLayout.lua",
-        ]
+        // Install every script and texture the app bundles, so the add-on can't drift from its table of contents.
+        let files = try FileManager.default.contentsOfDirectory(atPath: source.path)
+            .filter { $0.hasSuffix(".lua") || $0.hasSuffix(".tga") }
+            .sorted()
         var assets = try files.map { name in
             (name, try Data(contentsOf: source.appendingPathComponent(name)))
         }
@@ -126,7 +126,8 @@ struct ForeverRuntimeHome: View {
         var settings = binding.wrappedValue
         let scene = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
             .first { $0.activationState == .foregroundActive }
-        let size = scene?.screen.bounds.size ?? CGSize(width: 16, height: 9)
+        // The window, not the screen, so Split View and Stage Manager windows get their own aspect ratio.
+        let size = scene?.keyWindow?.bounds.size ?? scene?.screen.bounds.size ?? CGSize(width: 16, height: 9)
         let (width, height) = options.resolution.renderPixels(in: size)
         settings.aspect = ScreenAspect.phone.rawValue
         settings.screen = "\(width)x\(height)"

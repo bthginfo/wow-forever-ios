@@ -229,6 +229,18 @@ def port_changes(checkout: Path) -> dict[str, tuple[bytes | None, bytes]]:
         ("            pageGone = false\n            guard running else { return }",
          "            pageGone = false\n            chatFullscreen = false\n            guard running else { return }"),
     )
+    # WoW Forever runs the same x86-64 engine as the other WoW products, which Playport keeps off AVX.
+    edit(
+        "app/PlayportKit/Titles/compat-defaults.json",
+        ('    "epic-Buffalo": {\n',
+         '    "bnet-wowf": {\n'
+         '      "settings": {"runtime": "env.FEX_HOSTFEATURES=disableafp,disableavx"},\n'
+         '      "reason": "WoW Forever uses the World of Warcraft x86-64 client. Like the other WoW products it runs '
+         'without AVX, because the emulator does not keep the AVX registers\' upper halves in an exception\'s '
+         'context."\n'
+         '    },\n'
+         '    "epic-Buffalo": {\n'),
+    )
     edit("app/Info.plist", ("<string>Playport</string>", "<string>WoW Forever iOS</string>"))
     edit("app/xtool.yml", ("\nresources:\n", "\nresources:\n  - ForeverTouch\n"))
     edit(

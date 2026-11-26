@@ -95,7 +95,7 @@ enum ForeverShortcut: Identifiable {
         case .guild: language.text("Guild", "Gilde")
         case .groupFinder: language.text("Group Finder", "Gruppensuche")
         case .collections: language.text("Collections", "Sammlung")
-        case .frameLimit: language.text("30 FPS limit / restore", "30-FPS-Limit ein/aus")
+        case .frameLimit: language.text("Battery saver (30 FPS) on/off", "Akkusparmodus (30 FPS) ein/aus")
         }
     }
 
@@ -150,10 +150,11 @@ struct ForeverLayout {
         let jump = (tablet ? 64 : 0.142) * scale
         let jumpX = cameraX - gap - jump
         let auxWidth = (tablet ? 92 : 0.174) * scale
-        let auxHeight = tablet ? 46 * scale : (cameraHeight - gap) / 2
+        // Target and Interact stay at least 44 points tall on phones, stacked above the bottom edge.
+        let auxHeight = tablet ? 46 * scale : max(Self.minimumTouch, (cameraHeight - gap) / 2)
         let auxX = tablet ? margin + stick + gap : jumpX - gap - auxWidth
         let interactY = bottom - auxHeight
-        let targetY = tablet ? interactY - 54 * scale : bottom - cameraHeight
+        let targetY = tablet ? interactY - 54 * scale : interactY - gap - auxHeight
 
         bounds = [
             .movement: CGRect(x: margin, y: bottom - stick, width: stick, height: stick),
@@ -166,6 +167,20 @@ struct ForeverLayout {
             guard let rect = bounds[key], let position = positions[key.rawValue] else { continue }
             bounds[key] = Self.place(rect, at: position, in: size)
         }
+    }
+
+    static let minimumTouch: CGFloat = 44
+
+    /// Where a touch starts the movement stick: the stick widened toward the screen edges and the middle,
+    /// but not up into the left skill arc. Controls above it in the overlay keep their own touches.
+    func stickZone(in size: CGSize) -> CGRect {
+        guard let stick = bounds[.movement], stick.width > 0 else { return .zero }
+        let reach = stick.width * 0.5
+        let minX = max(0, stick.minX - reach)
+        let minY = max(0, stick.minY - stick.height * 0.08)
+        let maxX = min(size.width, stick.maxX + reach)
+        let maxY = min(size.height, stick.maxY + reach)
+        return CGRect(x: minX, y: minY, width: max(0, maxX - minX), height: max(0, maxY - minY))
     }
 
     static func place(_ rect: CGRect, at position: CGPoint, in size: CGSize) -> CGRect {
@@ -193,6 +208,9 @@ enum ForeverKeys {
     static let resetSkills: UInt8 = 0x24
     static let openChatFullscreen: UInt8 = 0x4D
     static let closeChatFullscreen: UInt8 = 0x43
+    static let jump: UInt8 = 0x20
+    static let target: UInt8 = 0x7b
+    static let interact: UInt8 = 0x79
 
     static func press(_ key: UInt8, modified: Bool = false) -> [ForeverInput] {
         let tap: [ForeverInput] = [.key(key, down: true), .key(key, down: false)]

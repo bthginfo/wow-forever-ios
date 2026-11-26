@@ -15,11 +15,10 @@ struct ForeverOverlay: View {
     @AppStorage("forever.cameraSensitivity") private var sensitivity = 1.0
     @State private var editMode: EditMode?
     @State private var draft: [String: CGPoint] = [:]
-    @State private var dragOrigin: CGPoint?
-    @State private var held: Set<UInt8> = []
-    @State private var stickDelta = CGSize.zero
-    @State private var cameraDelta = CGSize.zero
-    @State private var cameraHeld = false
+    // Each control's drag in the layout editor, keyed by where that drag started.
+    @State private var editDrags: [ForeverControl: (start: CGPoint, origin: CGPoint)] = [:]
+    // Bumped to make the play controls release every key and button they hold.
+    @State private var releaseRequest = 0
 
     @State private var positions: [String: CGPoint] = [:]
 
@@ -31,8 +30,12 @@ struct ForeverOverlay: View {
                 if chatFullscreen {
                     VStack {
                         HStack(spacing: 12) {
-                            Button(language.text("Back to game", "Zurück zum Spiel")) {
+                            Button {
                                 setChatFullscreen(false)
+                            } label: {
+                                Text(language.text("Back to game", "Zurück zum Spiel"))
+                                    .frame(minHeight: 44)
+                                    .contentShape(Rectangle())
                             }
                             composer
                         }
@@ -45,11 +48,13 @@ struct ForeverOverlay: View {
                     .font(.system(size: 13, weight: .medium))
                     .buttonStyle(.plain)
                 } else if editMode != .skills {
+                    // Later controls sit above the stick's wider touch zone and keep their own touches.
                     ForEach(ForeverControl.allCases) { control in
                         if let rect = layout.bounds[control], rect.width > 0, rect.height > 0 {
-                            controlView(control, rect: rect, size: size)
-                                .frame(width: rect.width, height: rect.height)
-                                .position(x: rect.midX, y: rect.midY)
+                            let frame = control == .movement && editMode == nil ? layout.stickZone(in: size) : rect
+                            controlView(control, rect: rect, zone: frame, size: size)
+                                .frame(width: frame.width, height: frame.height)
+                                .position(x: frame.midX, y: frame.midY)
                         }
                     }
                     toolbarAt(size: size)
@@ -68,7 +73,8 @@ struct ForeverOverlay: View {
             positions = (try? JSONDecoder().decode([String: CGPoint].self, from: data)) ?? [:]
         }
         .onChange(of: phase) { _, state in
-            if state == .background && editMode == .skills {
+            // Save while the game still has focus: by .background the runtime has paused the game.
+            if state != .active && editMode == .skills {
                 tap(ForeverKeys.saveSkills, modified: true)
                 editMode = nil
             }
@@ -86,70 +92,31 @@ struct ForeverOverlay: View {
     }
 
     @ViewBuilder
-    private func controlView(_ control: ForeverControl, rect: CGRect, size: CGSize) -> some View {
+    private func controlView(_ control: ForeverControl, rect: CGRect, zone: CGRect, size: CGSize) -> some View {
         if editMode == .controls {
-            controlShape(control, rect: rect)
+            ForeverControlFace(control: control, label: control.label(language), active: false)
                 .gesture(positionGesture(control, rect: rect, size: size))
         } else {
             switch control {
             case .movement:
-                controlShape(control, rect: rect)
-                    .gesture(DragGesture(minimumDistance: 0, coordinateSpace: .global)
-                        .onChanged { value in
-                            let radius = rect.width * 0.37
-                            stickDelta = CGSize(width: min(radius, max(-radius, value.translation.width)),
-                                                height: min(radius, max(-radius, value.translation.height)))
-                            setMovement(ForeverKeys.movement(value.translation, radius: radius, held: held))
-                        }
-                        .onEnded { _ in stopStick() })
+                ForeverStick(stick: rect, zone: zone, label: control.label(language),
+                             releaseRequest: releaseRequest, input: input)
             case .camera:
-                controlShape(control, rect: rect)
-                    .gesture(DragGesture(minimumDistance: 3, coordinateSpace: .global)
-                        .onChanged { value in
-                            if !cameraHeld { input(.cameraButton(true)); cameraHeld = true }
-                            let dx = Double(value.translation.width - cameraDelta.width) * sensitivity
-                            let dy = Double(value.translation.height - cameraDelta.height) * sensitivity
-                            input(.cameraMotion(dx: dx, dy: dy))
-                            cameraDelta = value.translation
-                        }
-                        .onEnded { _ in stopCamera() })
-            case .jump, .target, .interact:
-                Button {
-                    switch control {
-                    case .jump: tap(0x20)
-                    case .target: tap(0x7b, modified: true)
-                    case .interact: tap(0x79, modified: true)
-                    default: break
-                    }
-                } label: { controlShape(control, rect: rect) }
-                .buttonStyle(.plain)
+                ForeverCameraArea(label: control.label(language), sensitivity: sensitivity,
+                                  releaseRequest: releaseRequest, input: input)
+            case .jump:
+                // Held like a key, so the character keeps rising while it swims or flies.
+                ForeverPressControl(control: control, label: control.label(language), releaseRequest: releaseRequest,
+                                    press: { input(.key(ForeverKeys.jump, down: true)) },
+                                    release: { input(.key(ForeverKeys.jump, down: false)) })
+            case .target, .interact:
+                let key = control == .target ? ForeverKeys.target : ForeverKeys.interact
+                ForeverPressControl(control: control, label: control.label(language), releaseRequest: releaseRequest,
+                                    press: { tap(key, modified: true) }, release: nil)
             case .toolbar:
                 EmptyView()
             }
         }
-    }
-
-    private func controlShape(_ control: ForeverControl, rect: CGRect) -> some View {
-        let round = RoundedRectangle(cornerRadius: control == .camera ? rect.height * 0.36 : rect.height / 2)
-        return ZStack {
-            round.fill(control == .camera ? ForeverPalette.overlay.opacity(0.42) : ForeverPalette.overlay.opacity(0.82))
-            round.strokeBorder(ForeverPalette.gold.opacity(cameraHeld && control == .camera ? 0.9 : 0.5), lineWidth: 1)
-            if control == .movement && editMode == nil {
-                Circle()
-                    .fill(ForeverPalette.gold.opacity(0.80))
-                    .frame(width: rect.width * 0.36)
-                    .offset(x: stickDelta.width * 0.65, y: stickDelta.height * 0.65)
-            } else {
-                Text(control.label(language))
-                    .font(.system(size: 12, weight: .medium))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.58)
-                    .padding(.horizontal, 4)
-            }
-        }
-        .contentShape(round)
-        .accessibilityLabel(control.label(language))
-        .accessibilityIdentifier("forever.control." + control.rawValue)
     }
 
     @ViewBuilder
@@ -162,7 +129,7 @@ struct ForeverOverlay: View {
             .map { ForeverLayout.place(defaultRect, at: $0, in: size) } ?? defaultRect
         Group {
             if editMode == .controls {
-                controlShape(.toolbar, rect: rect)
+                ForeverControlFace(control: .toolbar, label: ForeverControl.toolbar.label(language), active: false)
                     .gesture(positionGesture(.toolbar, rect: rect, size: size))
             } else if compact {
                 HStack(spacing: 4) {
@@ -190,10 +157,14 @@ struct ForeverOverlay: View {
                                     .accessibilityIdentifier("forever.shortcut.\(action)")
                                 }
                                 if action == .character {
-                                    Menu(language.text("Social", "Kontakte")) {
+                                    Menu {
                                         ForEach(ForeverShortcut.social) { shortcut in
                                             Button(shortcut.label(language)) { tap(shortcut.key, modified: true) }
                                         }
+                                    } label: {
+                                        Text(language.text("Social", "Kontakte"))
+                                            .frame(minHeight: 44)
+                                            .contentShape(Rectangle())
                                     }
                                     .accessibilityIdentifier("forever.social")
                                 }
@@ -225,7 +196,7 @@ struct ForeverOverlay: View {
         } label: {
             Text(ForeverShortcut.chat.label(language))
                 .padding(.horizontal, 12)
-                .frame(minHeight: 42)
+                .frame(minHeight: 44)
                 .background(ForeverPalette.text.opacity(0.10), in: RoundedRectangle(cornerRadius: 10))
         }
         .buttonStyle(.plain)
@@ -271,7 +242,7 @@ struct ForeverOverlay: View {
             Button(language.text("Game menu", "Spielmenü")) { input(.gameMenu) }
             Button(language.text("Startup and connection", "Start und Verbindung")) { input(.diagnostics) }
         } label: {
-            Image(systemName: "ellipsis").frame(width: 42, height: 44)
+            Image(systemName: "ellipsis").frame(width: 44, height: 44).contentShape(Rectangle())
         }
         .accessibilityLabel(language.text("More controls", "Weitere Funktionen"))
         .accessibilityIdentifier("forever.more")
@@ -287,16 +258,16 @@ struct ForeverOverlay: View {
     }
 
     private func editBar(_ mode: EditMode) -> some View {
-        HStack(spacing: 17) {
-            Button(language.text("Default", "Standard")) {
+        HStack(spacing: 6) {
+            editButton(language.text("Default", "Standard")) {
                 if mode == .controls { draft = [:] }
                 else { tap(ForeverKeys.resetSkills, modified: true) }
             }
-            Button(mode == .skills ? language.text("Discard", "Verwerfen") : language.text("Cancel", "Abbrechen")) {
+            editButton(mode == .skills ? language.text("Discard", "Verwerfen") : language.text("Cancel", "Abbrechen")) {
                 if mode == .skills { tap(ForeverKeys.cancelSkills, modified: true) }
                 editMode = nil
             }
-            Button(mode == .skills ? language.text("Done", "Fertig") : language.text("Save", "Speichern")) {
+            editButton(mode == .skills ? language.text("Done", "Fertig") : language.text("Save", "Speichern")) {
                 if mode == .controls { savedPositions = (try? JSONEncoder().encode(draft)) ?? savedPositions }
                 else { tap(ForeverKeys.saveSkills, modified: true) }
                 editMode = nil
@@ -305,44 +276,227 @@ struct ForeverOverlay: View {
         }
         .font(.system(size: 13, weight: .semibold))
         .buttonStyle(.plain)
-        .padding(12)
+        .padding(.horizontal, 8)
         .background(ForeverPalette.overlay, in: RoundedRectangle(cornerRadius: 14))
+    }
+
+    private func editButton(_ title: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title).padding(.horizontal, 10).frame(minWidth: 44, minHeight: 44).contentShape(Rectangle())
+        }
     }
 
     private func positionGesture(_ control: ForeverControl, rect: CGRect, size: CGSize) -> some Gesture {
         DragGesture(minimumDistance: 1, coordinateSpace: .global)
             .onChanged { value in
-                if dragOrigin == nil { dragOrigin = CGPoint(x: rect.midX, y: rect.midY) }
-                guard let origin = dragOrigin else { return }
-                let center = CGPoint(x: origin.x + value.translation.width, y: origin.y + value.translation.height)
+                // A new start point means a new drag, even if the previous one was cancelled without an end.
+                let current: (start: CGPoint, origin: CGPoint)? = editDrags[control]
+                let drag: (start: CGPoint, origin: CGPoint)
+                if let current, current.start == value.startLocation {
+                    drag = current
+                } else {
+                    drag = (start: value.startLocation, origin: CGPoint(x: rect.midX, y: rect.midY))
+                }
+                editDrags[control] = drag
+                let center = CGPoint(x: drag.origin.x + value.translation.width,
+                                     y: drag.origin.y + value.translation.height)
                 draft[control.rawValue] = ForeverLayout.position(rect: rect, center: center, size: size)
             }
-            .onEnded { _ in dragOrigin = nil }
+            .onEnded { _ in editDrags[control] = nil }
     }
 
     private func tap(_ key: UInt8, modified: Bool = false) {
         ForeverKeys.press(key, modified: modified).forEach(input)
     }
 
+    private func releaseAll() {
+        releaseRequest &+= 1
+    }
+}
+
+/// The shared look of a touch control.
+struct ForeverControlFace: View {
+    let control: ForeverControl
+    let label: String
+    let active: Bool
+
+    var body: some View {
+        GeometryReader { geometry in
+            let height = geometry.size.height
+            let round = RoundedRectangle(cornerRadius: control == .camera ? height * 0.36 : height / 2)
+            ZStack {
+                round.fill(active ? ForeverPalette.gold.opacity(0.36)
+                                  : ForeverPalette.overlay.opacity(control == .camera ? 0.42 : 0.82))
+                round.strokeBorder(ForeverPalette.gold.opacity(active ? 0.95 : 0.5), lineWidth: 1)
+                Text(label)
+                    .font(.system(size: 12, weight: .medium))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.58)
+                    .padding(.horizontal, 4)
+            }
+            .contentShape(round)
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(label)
+        .accessibilityIdentifier("forever.control." + control.rawValue)
+    }
+}
+
+/// The movement stick. A touch anywhere in its zone starts it there, and the base follows the thumb.
+/// Its touch state resets when the system cancels the touch, which releases the movement keys.
+struct ForeverStick: View {
+    let stick: CGRect
+    let zone: CGRect
+    let label: String
+    let releaseRequest: Int
+    let input: (ForeverInput) -> Void
+
+    private struct Touch: Equatable {
+        var start: CGPoint
+        var translation: CGSize
+    }
+
+    @GestureState private var touch: Touch?
+    @State private var held: Set<UInt8> = []
+
+    var body: some View {
+        let radius = stick.width / 2
+        let travel = stick.width * 0.37
+        let resting = CGPoint(x: stick.midX - zone.minX, y: stick.midY - zone.minY)
+        let base = touch.map { touch in
+            let inset = radius * 0.7
+            return CGPoint(x: min(max(touch.start.x, inset), max(inset, zone.width - inset)),
+                           y: min(max(touch.start.y, inset), max(inset, zone.height - inset)))
+        } ?? resting
+        let knob = touch.map { touch -> CGSize in
+            let length = hypot(touch.translation.width, touch.translation.height)
+            let scale = length > travel ? travel / length : 1
+            return CGSize(width: touch.translation.width * scale * 0.65, height: touch.translation.height * scale * 0.65)
+        } ?? .zero
+
+        ZStack {
+            Color.clear.contentShape(Rectangle())
+            ZStack {
+                Circle().fill(ForeverPalette.overlay.opacity(touch == nil ? 0.72 : 0.86))
+                Circle().strokeBorder(ForeverPalette.gold.opacity(touch == nil ? 0.5 : 0.9), lineWidth: 1)
+                Circle()
+                    .fill(ForeverPalette.gold.opacity(0.80))
+                    .frame(width: stick.width * 0.36)
+                    .offset(knob)
+            }
+            .frame(width: stick.width, height: stick.height)
+            .position(base)
+            .allowsHitTesting(false)
+        }
+        .gesture(
+            DragGesture(minimumDistance: 0, coordinateSpace: .local)
+                .updating($touch) { value, state, _ in
+                    state = Touch(start: value.startLocation, translation: value.translation)
+                }
+        )
+        .onChange(of: touch) { _, touch in
+            setMovement(touch.map { ForeverKeys.movement($0.translation, radius: travel, held: held) } ?? [])
+        }
+        .onChange(of: releaseRequest) { _, _ in setMovement([]) }
+        .onDisappear { setMovement([]) }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(label)
+        .accessibilityIdentifier("forever.control.movement")
+    }
+
     private func setMovement(_ keys: Set<UInt8>) {
+        guard keys != held else { return }
         for key in held.subtracting(keys).sorted() { input(.key(key, down: false)) }
         for key in keys.subtracting(held).sorted() { input(.key(key, down: true)) }
         held = keys
     }
+}
 
-    private func stopStick() {
-        setMovement([])
-        stickDelta = .zero
+/// Drag to turn the camera with the right mouse button. Motion is tracked outside view state, so a drag only
+/// redraws this control when it starts and ends.
+struct ForeverCameraArea: View {
+    let label: String
+    let sensitivity: Double
+    let releaseRequest: Int
+    let input: (ForeverInput) -> Void
+
+    private final class Tracker {
+        var last = CGSize.zero
     }
 
-    private func stopCamera() {
-        if cameraHeld { input(.cameraButton(false)) }
-        cameraHeld = false
-        cameraDelta = .zero
+    @GestureState private var translation: CGSize?
+    @State private var held = false
+    @State private var tracker = Tracker()
+
+    var body: some View {
+        ForeverControlFace(control: .camera, label: label, active: held)
+            .gesture(
+                DragGesture(minimumDistance: 3, coordinateSpace: .global)
+                    .updating($translation) { value, state, _ in state = value.translation }
+            )
+            .onChange(of: translation) { _, translation in
+                guard let translation else { return stop() }
+                if !held {
+                    input(.cameraButton(true))
+                    held = true
+                }
+                let dx = Double(translation.width - tracker.last.width) * sensitivity
+                let dy = Double(translation.height - tracker.last.height) * sensitivity
+                tracker.last = translation
+                input(.cameraMotion(dx: dx, dy: dy))
+            }
+            .onChange(of: releaseRequest) { _, _ in stop() }
+            .onDisappear { stop() }
     }
 
-    private func releaseAll() {
-        stopStick()
-        stopCamera()
+    private func stop() {
+        if held { input(.cameraButton(false)) }
+        held = false
+        tracker.last = .zero
+    }
+}
+
+/// A button that acts on touch-down like a game pad and gives a light haptic tick.
+struct ForeverPressControl: View {
+    let control: ForeverControl
+    let label: String
+    let releaseRequest: Int
+    let press: () -> Void
+    let release: (() -> Void)?
+
+    @GestureState private var touching = false
+    @State private var down = false
+    @State private var presses = 0
+
+    var body: some View {
+        ForeverControlFace(control: control, label: label, active: down)
+            .gesture(
+                DragGesture(minimumDistance: 0, coordinateSpace: .local)
+                    .updating($touching) { _, state, _ in state = true }
+            )
+            .onChange(of: touching) { _, touching in
+                if touching { begin() } else { end() }
+            }
+            .onChange(of: releaseRequest) { _, _ in end() }
+            .onDisappear { end() }
+            .sensoryFeedback(.impact(weight: .light, intensity: 0.7), trigger: presses)
+            .accessibilityAddTraits(.isButton)
+            .accessibilityAction {
+                begin()
+                end()
+            }
+    }
+
+    private func begin() {
+        guard !down else { return }
+        down = true
+        presses &+= 1
+        press()
+    }
+
+    private func end() {
+        guard down else { return }
+        down = false
+        release?()
     }
 }
