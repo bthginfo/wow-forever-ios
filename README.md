@@ -9,10 +9,10 @@ The project brings the Android launcher's gold-and-navy interface, German and En
 | Area | Implementation |
 | --- | --- |
 | Launcher | Status panel, Battle.net region, 720p/900p/1080p render presets and English/German interface |
-| Touch controls | Movement stick, right-drag camera, Jump, Target and Interact, with a compact phone layout and tablet layout |
+| Touch controls | Movement stick that starts anywhere in the lower-left corner, right-drag camera, and Jump, Target and Interact buttons that respond on touch with a haptic tick. Compact phone layout and tablet layout. |
 | In-game toolbar | Chat, Character, Social, Bags, Map, Professions, Talents, Quests and Spellbook. Social contains Friends, Guild and Group Finder. Collections is under More controls. |
 | Editing | Move and save touch-control positions. The Forever Touch add-on lets each character save and switch between sets of left and right skill arcs. |
-| Runtime | Playport supplies the download, update check, Windows guest and input. The Android browser-first Battle.net handoff is pending. |
+| Runtime | Playport supplies the download, update check, Windows guest and input. WoW Forever uses the same compatibility setting as Playport's other WoW products, which keeps the x86-64 client off AVX. The Android browser-first Battle.net handoff is pending. |
 
 The app selects the tablet HUD when both window dimensions are at least 600 points. The game resolution is fitted to the current aspect ratio at launch. Playport supplies the in-game keyboard.
 
@@ -57,7 +57,9 @@ Once setup is ready, choose your region, tap **Download and install**, and leave
 
 When a charge is still available, the recharge sweep stays light. Spent charges and empty consumables dim, and an item stack shows its last unit. In the skill editor, replacing a spell or item reopens its list on the page containing the current binding. **Applied** confirms an edit has reached your character profile in memory. **Done** requests one interface reload to write it to disk. Leaving the app also closes the skill editor and requests that save. Combat can postpone the write. WoW must get time to complete the reload or log out normally.
 
-The **30 FPS limit / restore** command in **More controls** limits foreground rendering. Tap it again to restore the previous game setting. A lower active limit is respected.
+Place your thumb on the movement stick or anywhere around it in the lower-left corner. The stick base follows your thumb. Jump, Target and Interact respond as soon as you touch them. Hold Jump to keep rising while you swim or fly. A control releases its keys when iOS cancels the touch, for example when a system gesture or menu takes over.
+
+**More controls → Battery saver (30 FPS)** limits foreground rendering. Choose it again to restore the previous game setting. A lower active limit is respected.
 
 ## Skill arc sets
 
@@ -75,11 +77,17 @@ Tap **Chat** beside the minimap to show or hide the translucent window. Drag the
 
 ## Tests
 
-The launcher and touch overlay passed automated interaction tests on a simulated iPhone 16 Pro and iPad Pro. The same run also checked the Playport input library and the Forever Touch mobile profile logic. Installation, JIT and gameplay on physical devices are pending. [Test report](https://github.com/bthginfo/wow-forever-ios/actions/runs/44478093466) · [Run the preview locally](docs/INSTALL.md#iphone-simulator)
+Every push builds the SwiftUI app for the iPhone Simulator, runs the layout tests and renders the launcher and HUD on a simulated iPhone. [Simulator run](https://github.com/bthginfo/wow-forever-ios/actions/runs/45878222608) · [Run the preview locally](docs/INSTALL.md#iphone-simulator)
 
-The Playport app target also compiled with Xcode 26.6 and the iPhoneOS SDK. That check covers source compilation before runtime linking, IPA packaging and signing. [iPhoneOS compile report](https://github.com/bthginfo/wow-forever-ios/actions/runs/44483673108)
+Every push that changes the port also compiles it inside the pinned Playport app target with Xcode 26.6 and the iPhoneOS 26 SDK, in the Swift mode the device build uses. The current sources compile there without warnings. The check stops before runtime linking, IPA packaging and signing. [iPhoneOS compile run](https://github.com/bthginfo/wow-forever-ios/actions/runs/45878222681)
 
 Run `lua Tests/ForeverTouchProfiles.lua` to check arc autosave, cooldowns, profession bindings, game panel shortcuts, and chat placement with simulated WoW events.
+
+### Not verified yet
+
+- Installation, JIT, sign-in and gameplay on a physical iPhone or iPad. No device IPA has been built from this project.
+- Sign-in uses the Windows client's Battle.net page. WoW Forever's product uses web credentials, and the browser handoff that Android uses is not ported.
+- **Done** in the skill editor requests the interface reload from a timer. On Android the game only accepted that reload from the tap itself, so on iOS the arcs may be written to disk only when you log out. Log out in the game before closing the app after editing arcs.
 
 ## Source, credits and use at your own risk
 
